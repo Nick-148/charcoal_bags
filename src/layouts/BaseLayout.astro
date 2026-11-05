@@ -1,0 +1,63 @@
+---
+import '@/styles/global.css';
+import SiteFooter from '@/components/SiteFooter.astro';
+import SiteHeader from '@/components/SiteHeader.astro';
+import { site } from '@/config/site';
+
+interface Props {
+  title?: string;
+  description?: string;
+  /** Hide from search engines (cart, checkout, etc.). */
+  noindex?: boolean;
+  /** JSON-LD object(s) for rich results. */
+  structuredData?: Record<string, unknown> | Record<string, unknown>[];
+}
+
+const { title, description = site.description, noindex = false, structuredData } = Astro.props;
+const pageTitle = title ? `${title} | ${site.name}` : `${site.name} — ${site.tagline}`;
+const canonical = Astro.site ? new URL(Astro.url.pathname, Astro.site).toString() : undefined;
+// Escape "<" so user-influenced strings can never close the script element.
+const jsonLd = structuredData ? JSON.stringify(structuredData).replaceAll('<', '\\u003c') : null;
+---
+
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>{pageTitle}</title>
+    <meta name="description" content={description} />
+    <meta name="theme-color" content="#111111" />
+    <link rel="icon" href="/favicon.svg" type="image/svg+xml" />
+    {canonical && <link rel="canonical" href={canonical} />}
+    {noindex && <meta name="robots" content="noindex, nofollow" />}
+    <meta property="og:type" content="website" />
+    <meta property="og:site_name" content={site.name} />
+    <meta property="og:title" content={pageTitle} />
+    <meta property="og:description" content={description} />
+    {canonical && <meta property="og:url" content={canonical} />}
+    <meta name="twitter:card" content="summary" />
+    {jsonLd && <script is:inline type="application/ld+json" set:html={jsonLd} />}
+  </head>
+  <body class="flex min-h-dvh flex-col">
+    <a
+      href="#main"
+      class="sr-only focus:not-sr-only focus:absolute focus:top-2 focus:left-2 focus:z-50 btn-primary"
+    >
+      Skip to content
+    </a>
+    <SiteHeader />
+    <main id="main" class="grow">
+      <slot />
+    </main>
+    <SiteFooter />
+    {site.analyticsToken && (
+      <script
+        is:inline
+        defer
+        src="https://static.cloudflareinsights.com/beacon.min.js"
+        data-cf-beacon={JSON.stringify({ token: site.analyticsToken })}
+      />
+    )}
+  </body>
+</html>

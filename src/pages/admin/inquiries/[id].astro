@@ -1,0 +1,136 @@
+---
+export const prerender = false;
+
+import StatusPill from '@/components/admin/StatusPill.astro';
+import AdminLayout from '@/layouts/AdminLayout.astro';
+import { formatShipDate } from '@/lib/availability';
+import { INQUIRY_STATUSES, getInquiry } from '@/server/db/queries';
+import { seeOther } from '@/server/http';
+import { getDb } from '@/server/runtime';
+import { updateInquiry, type AdminResult } from '@/server/services/admin';
+import { formStrings } from '@/server/validation';
+
+const db = getDb();
+const id = Astro.params.id ?? '';
+let inquiry = /^[0-9a-f-]{36}$/.test(id) ? await getInquiry(db, id) : null;
+if (!inquiry) return Astro.rewrite('/404');
+
+let result: AdminResult | null = null;
+if (Astro.request.method === 'POST') {
+  result = await updateInquiry(
+    db,
+    id,
+    formStrings(await Astro.request.formData(), ['status', 'adminNotes']),
+    Astro.locals.admin!.email,
+  );
+  if (result.ok) return seeOther(`/admin/inquiries/${id}?saved=1`);
+  Astro.response.status = 400;
+  inquiry = (await getInquiry(db, id))!;
+}
+
+const flash =
+  result && !result.ok
+    ? { kind: 'error' as const, message: result.error }
+    : Astro.url.searchParams.get('saved') === '1'
+      ? { kind: 'ok' as const, message: 'Saved.' }
+      : null;
+const subject =
+  inquiry.kind === 'bulk'
+    ? `Re: your bulk order request (${inquiry.quantity} bags)`
+    : `Re: ${inquiry.topic ?? 'your message'}`;
+const dateFmt = new Intl.DateTimeFormat('en-US', {
+  dateStyle: 'medium',
+  timeStyle: 'short',
+  timeZone: 'America/New_York',
+});
+---
+
+<AdminLayout title={inquiry.kind === 'bulk' ? 'Bulk quote request' : 'Message'} flash={flash}>
+  <div class="grid gap-6 lg:grid-cols-[1.5fr_1fr]">
+    <section class="card p-5">
+      <div class="flex flex-wrap items-center gap-3">
+        <StatusPill status={inquiry.status} />
+        <span class="text-sm text-fg-subtle">{dateFmt.format(new Date(inquiry.created_at))}</span>
+      </div>
+      <dl class="mt-4 grid grid-cols-[9rem_1fr] gap-x-4 gap-y-2 text-sm">
+        <dt class="text-fg-subtle">From</dt>
+        <dd>{inquiry.name}</dd>
+        <dt class="text-fg-subtle">Email</dt>
+        <dd>
+          <a
+            class="text-accent underline"
+            href={`mailto:${inquiry.email}?subject=${encodeURIComponent(subject)}`}
+          >
+            {inquiry.email}
+          </a>
+        </dd>
+        {inquiry.topic && (
+          <>
+            <dt class="text-fg-subtle">Topic</dt>
+            <dd>{inquiry.topic}</dd>
+          </>
+        )}
+        {inquiry.organization && (
+          <>
+            <dt class="text-fg-subtle">Organization</dt>
+            <dd>{inquiry.organization}</dd>
+          </>
+        )}
+        {inquiry.quantity && (
+          <>
+            <dt class="text-fg-subtle">Quantity</dt>
+            <dd>{inquiry.quantity} bags</dd>
+          </>
+        )}
+        {inquiry.needed_by && (
+          <>
+            <dt class="text-fg-subtle">Needed by</dt>
+            <dd>{formatShipDate(inquiry.needed_by)}</dd>
+          </>
+        )}
+        {inquiry.customization && (
+          <>
+            <dt class="text-fg-subtle">Customization</dt>
+            <dd>{inquiry.customization}</dd>
+          </>
+        )}
+      </dl>
+      <h2 class="eyebrow mt-6 text-fg-subtle">Message</h2>
+      <p class="mt-2 whitespace-pre-wrap text-fg">{inquiry.message}</p>
+      <a class="btn-primary mt-6" href={`mailto:${inquiry.email}?subject=${encodeURIComponent(subject)}`}>
+        Reply by email
+      </a>
+    </section>
+    <section class="card h-fit p-5">
+      <form method="post" class="space-y-4">
+        <div>
+          <label class="field-label" for="status">
+            Status
+          </label>
+          <select class="field" id="status" name="status">
+            {INQUIRY_STATUSES.map((s) => (
+              <option value={s} selected={s === inquiry.status}>
+                {s.replaceAll('_', ' ')}
+              </option>
+            ))}
+          </select>
+        </div>
+        <div>
+          <label class="field-label" for="adminNotes">
+            Internal notes
+          </label>
+          <textarea
+            class="field min-h-28"
+            id="adminNotes"
+            name="adminNotes"
+            maxlength="2000"
+          >{inquiry.admin_notes ?? ''}</textarea>
+        </div>
+        <button class="btn-secondary">Save</button>
+      </form>
+    </section>
+  </div>
+  <a href="/admin/inquiries" class="mt-6 inline-block text-sm text-accent underline">
+    ← All inquiries
+  </a>
+</AdminLayout>

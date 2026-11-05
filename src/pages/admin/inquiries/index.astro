@@ -1,0 +1,74 @@
+---
+export const prerender = false;
+
+import StatusPill from '@/components/admin/StatusPill.astro';
+import AdminLayout from '@/layouts/AdminLayout.astro';
+import { INQUIRY_STATUSES, listInquiries, type InquiryStatus } from '@/server/db/queries';
+import { getDb } from '@/server/runtime';
+
+const requested = Astro.url.searchParams.get('status');
+const status: InquiryStatus | 'open' | undefined =
+  requested === 'all'
+    ? undefined
+    : INQUIRY_STATUSES.includes(requested as InquiryStatus)
+      ? (requested as InquiryStatus)
+      : 'open';
+const inquiries = await listInquiries(getDb(), { ...(status ? { status } : {}), limit: 200 });
+const tabs = [
+  { id: 'open', label: 'Open' },
+  { id: 'replied', label: 'Replied' },
+  { id: 'closed', label: 'Closed' },
+  { id: 'spam', label: 'Spam' },
+  { id: 'all', label: 'All' },
+];
+const current = status ?? 'all';
+const dateFmt = new Intl.DateTimeFormat('en-US', {
+  month: 'short',
+  day: 'numeric',
+  timeZone: 'America/New_York',
+});
+---
+
+<AdminLayout title="Inquiries">
+  <nav aria-label="Inquiry filters">
+    <ul class="flex flex-wrap gap-2">
+      {tabs.map((t) => (
+        <li>
+          <a
+            href={`/admin/inquiries?status=${t.id}`}
+            class:list={[
+              'btn min-h-9 px-3 py-1.5 text-xs',
+              t.id === current
+                ? 'bg-accent text-accent-ink'
+                : 'border border-line-strong text-fg-muted hover:text-fg',
+            ]}
+          >
+            {t.label}
+          </a>
+        </li>
+      ))}
+    </ul>
+  </nav>
+  <div class="card mt-4 divide-y divide-line">
+    {inquiries.length === 0 ? (
+      <p class="p-6 text-center text-fg-muted">Nothing here.</p>
+    ) : (
+      inquiries.map((i) => (
+        <a href={`/admin/inquiries/${i.id}`} class="flex flex-wrap items-center gap-3 p-4 hover:bg-surface">
+          <span
+            class:list={['eyebrow w-14 text-[10px]', i.kind === 'bulk' ? 'text-accent' : 'text-fg-subtle']}
+          >
+            {i.kind}
+          </span>
+          <span class="min-w-0 grow">
+            <span class="font-semibold">{i.kind === 'bulk' ? (i.organization ?? i.name) : i.name}</span>
+            <span class="text-fg-muted"> · {i.kind === 'bulk' ? `${i.quantity ?? '?'} bags` : i.topic}</span>
+            <span class="block truncate text-sm text-fg-subtle">{i.message}</span>
+          </span>
+          <span class="text-xs text-fg-subtle">{dateFmt.format(new Date(i.created_at))}</span>
+          <StatusPill status={i.status} />
+        </a>
+      ))
+    )}
+  </div>
+</AdminLayout>

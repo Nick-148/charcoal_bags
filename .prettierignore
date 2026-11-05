@@ -1,0 +1,9 @@
+dist/
+.astro/
+.wrangler/
+node_modules/
+package-lock.json
+worker-configuration.d.ts
+coverage/
+playwright-report/
+test-results/

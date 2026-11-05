@@ -1,0 +1,72 @@
+---
+import CartBadge from '@/components/cart/CartBadge';
+import Logo from '@/components/Logo.astro';
+
+const nav = [
+  { href: '/shop', label: 'Shop' },
+  { href: '/bulk', label: 'Bulk & Teams' },
+  { href: '/the-vibe', label: 'The Vibe' },
+  { href: '/contact', label: 'Contact' },
+];
+const current = Astro.url.pathname;
+---
+
+<header class="sticky top-0 z-40 border-b border-line bg-surface/95 backdrop-blur">
+  <div class="container-page flex h-16 items-center justify-between gap-4">
+    <a href="/" class="shrink-0" aria-label="Home">
+      <Logo />
+    </a>
+    <nav aria-label="Main" class="hidden md:block">
+      <ul class="flex items-center gap-6">
+        {nav.map((item) => (
+          <li>
+            <a
+              href={item.href}
+              class:list={[
+                'eyebrow transition-colors hover:text-accent',
+                current.startsWith(item.href) ? 'text-accent' : 'text-fg-muted',
+              ]}
+              aria-current={current.startsWith(item.href) ? 'page' : undefined}
+            >
+              {item.label}
+            </a>
+          </li>
+        ))}
+      </ul>
+    </nav>
+    <div class="flex items-center gap-2">
+      <CartBadge client:load />
+      <details class="relative md:hidden">
+        <summary
+          class="btn-secondary min-h-10 list-none px-3 [&::-webkit-details-marker]:hidden"
+          aria-label="Menu"
+        >
+          <svg
+            viewBox="0 0 24 24"
+            class="h-5 w-5"
+            fill="none"
+            stroke="currentColor"
+            stroke-width="2"
+            aria-hidden="true"
+          >
+            <path d="M4 7h16M4 12h16M4 17h16"></path>
+          </svg>
+        </summary>
+        <nav aria-label="Mobile" class="card absolute right-0 mt-2 w-56 p-2 shadow-xl">
+          <ul>
+            {nav.map((item) => (
+              <li>
+                <a
+                  href={item.href}
+                  class="eyebrow block rounded-sm px-3 py-3 text-fg-muted hover:bg-surface hover:text-accent"
+                >
+                  {item.label}
+                </a>
+              </li>
+            ))}
+          </ul>
+        </nav>
+      </details>
+    </div>
+  </div>
+</header>

@@ -1,0 +1,19 @@
+---
+import BaseLayout from '@/layouts/BaseLayout.astro';
+---
+
+<BaseLayout title="Not found" noindex>
+  <section class="container-page max-w-xl py-24 text-center">
+    <p class="eyebrow text-accent">Error 404</p>
+    <h1 class="heading-display mt-2 text-6xl">Missed the board</h1>
+    <p class="mt-4 text-fg-muted">That page doesn’t exist, or it was moved.</p>
+    <div class="mt-8 flex justify-center gap-3">
+      <a href="/" class="btn-primary">
+        Back to base
+      </a>
+      <a href="/shop" class="btn-secondary">
+        Shop
+      </a>
+    </div>
+  </section>
+</BaseLayout>

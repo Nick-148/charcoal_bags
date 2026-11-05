@@ -1,0 +1,30 @@
+# Local development configuration. Copy to .dev.vars (gitignored):
+#   cp .dev.vars.example .dev.vars
+# Values here override `vars` in wrangler.jsonc when running `npm run dev` / `npm run preview`.
+
+ENVIRONMENT=development
+PUBLIC_SITE_URL=http://localhost:4321
+
+# fake = local simulated checkout (no Stripe account needed). stripe = real Stripe test mode.
+PAYMENTS_PROVIDER=fake
+# STRIPE_SECRET_KEY=sk_test_...
+# STRIPE_WEBHOOK_SECRET=whsec_...
+
+# console = print emails to the terminal. resend = send through Resend.
+EMAIL_PROVIDER=console
+EMAIL_FROM=Black Bag Odor Co. <onboarding@resend.dev>
+ALERT_EMAIL_TO=founder@example.com
+# RESEND_API_KEY=re_...
+
+# Cloudflare's published Turnstile test keys: the widget renders and always passes.
+CAPTCHA_PROVIDER=turnstile
+TURNSTILE_SITE_KEY=1x00000000000000000000AA
+TURNSTILE_SECRET_KEY=1x0000000000000000000000000000000AA
+
+# dev-bypass only works when ENVIRONMENT=development AND the request host is localhost.
+ADMIN_AUTH_MODE=dev-bypass
+ADMIN_DEV_EMAIL=founder@example.com
+# Optional allowlist (comma-separated) enforced after Cloudflare Access in production.
+# ADMIN_EMAILS=founder@example.com
+# ACCESS_TEAM_DOMAIN=https://<team>.cloudflareaccess.com
+# ACCESS_AUD=<application audience tag>

@@ -1,0 +1,18 @@
+---
+/**
+ * Cloudflare Turnstile widget. Adds a hidden `cf-turnstile-response` field to the enclosing form.
+ * Renders nothing when captcha is disabled (development only — refused in production by config).
+ */
+interface Props {
+  siteKey: string | null;
+  action: string;
+}
+const { siteKey, action } = Astro.props;
+---
+
+{siteKey && (
+  <>
+    <div class="cf-turnstile min-h-[65px]" data-sitekey={siteKey} data-action={action} data-theme="dark" />
+    <script is:inline src="https://challenges.cloudflare.com/turnstile/v0/api.js" async defer />
+  </>
+)}

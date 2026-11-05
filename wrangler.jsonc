@@ -1,0 +1,51 @@
+{
+  "$schema": "node_modules/wrangler/config-schema.json",
+  // Infrastructure names are brand-neutral on purpose so a rebrand never touches deployed resources.
+  "name": "charcoal-bags",
+  "main": "./src/worker.ts",
+  "compatibility_date": "2026-11-01",
+  "compatibility_flags": ["nodejs_compat", "global_fetch_strictly_public"],
+  "assets": {
+    "binding": "ASSETS",
+    "directory": "./dist/client",
+  },
+  "observability": {
+    "enabled": true,
+  },
+  "d1_databases": [
+    {
+      "binding": "DB",
+      "database_name": "charcoal-bags",
+      "migrations_dir": "migrations",
+      // database_id is filled in after `wrangler d1 create charcoal-bags` (see docs/runbooks/deploy.md).
+    },
+  ],
+  "ratelimits": [
+    // Contact + bulk quote submissions per client IP.
+    { "name": "FORM_RATE_LIMITER", "namespace_id": "1001", "simple": { "limit": 5, "period": 60 } },
+    // Checkout session creation per client IP.
+    { "name": "CHECKOUT_RATE_LIMITER", "namespace_id": "1002", "simple": { "limit": 10, "period": 60 } },
+  ],
+  "triggers": {
+    // Reconcile abandoned checkouts with Stripe and release their reserved inventory.
+    "crons": ["*/15 * * * *"],
+  },
+  // Non-secret production configuration. Local development overrides these via .dev.vars.
+  // Secrets (STRIPE_SECRET_KEY, STRIPE_WEBHOOK_SECRET, RESEND_API_KEY, TURNSTILE_SECRET_KEY)
+  // are set with `wrangler secret put` and never committed.
+  "vars": {
+    "ENVIRONMENT": "production",
+    "PUBLIC_SITE_URL": "",
+    "PAYMENTS_PROVIDER": "stripe",
+    "EMAIL_PROVIDER": "resend",
+    "EMAIL_FROM": "Black Bag Odor Co. <onboarding@resend.dev>",
+    "ALERT_EMAIL_TO": "",
+    "CAPTCHA_PROVIDER": "turnstile",
+    "TURNSTILE_SITE_KEY": "",
+    "ADMIN_AUTH_MODE": "access",
+    // Optional comma-separated allowlist checked after Access (defense in depth).
+    "ADMIN_EMAILS": "",
+    "ACCESS_TEAM_DOMAIN": "",
+    "ACCESS_AUD": "",
+  },
+}

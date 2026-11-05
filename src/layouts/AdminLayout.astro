@@ -1,0 +1,96 @@
+---
+import '@/styles/global.css';
+import { site } from '@/config/site';
+import { configWarnings } from '@/server/factories';
+import { getConfig } from '@/server/runtime';
+
+interface Props {
+  title: string;
+  flash?: { kind: 'ok' | 'error'; message: string } | null;
+}
+const { title, flash } = Astro.props;
+const admin = Astro.locals.admin;
+const warnings = configWarnings(getConfig());
+const nav = [
+  { href: '/admin', label: 'Overview' },
+  { href: '/admin/orders', label: 'Orders' },
+  { href: '/admin/inventory', label: 'Inventory' },
+  { href: '/admin/inquiries', label: 'Inquiries' },
+];
+const path = Astro.url.pathname;
+---
+
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <meta name="robots" content="noindex, nofollow" />
+    <title>{title} · Admin · {site.name}</title>
+    <link rel="icon" href="/favicon.svg" type="image/svg+xml" />
+  </head>
+  <body class="min-h-dvh bg-surface-sunken">
+    <header class="border-b border-line bg-surface">
+      <div class="container-page flex flex-wrap items-center justify-between gap-3 py-3">
+        <div class="flex items-center gap-6">
+          <a href="/admin" class="heading-display text-xl">
+            {site.shortName} <span class="text-accent">HQ</span>
+          </a>
+          <nav aria-label="Admin">
+            <ul class="flex flex-wrap gap-4">
+              {nav.map((item) => {
+                const active = item.href === '/admin' ? path === '/admin' : path.startsWith(item.href);
+                return (
+                  <li>
+                    <a
+                      href={item.href}
+                      class:list={['eyebrow', active ? 'text-accent' : 'text-fg-muted hover:text-fg']}
+                      aria-current={active ? 'page' : undefined}
+                    >
+                      {item.label}
+                    </a>
+                  </li>
+                );
+              })}
+            </ul>
+          </nav>
+        </div>
+        <div class="flex items-center gap-4 text-xs text-fg-subtle">
+          <span>
+            {admin?.email}
+            {admin?.source === 'dev-bypass' ? ' (dev bypass)' : ''}
+          </span>
+          <a href="/" class="hover:text-accent">
+            View store ↗
+          </a>
+        </div>
+      </div>
+    </header>
+    {warnings.length > 0 && (
+      <div class="border-b border-warn/40 bg-warn/10">
+        <ul class="container-page space-y-0.5 py-2 text-xs text-warn">
+          {warnings.map((w) => (
+            <li>⚠ {w}</li>
+          ))}
+        </ul>
+      </div>
+    )}
+    <main class="container-page py-8">
+      <h1 class="heading-display text-4xl">{title}</h1>
+      {flash && (
+        <p
+          role={flash.kind === 'error' ? 'alert' : 'status'}
+          class:list={[
+            'mt-4 rounded-sm border p-3 text-sm',
+            flash.kind === 'ok' ? 'border-ok/50 text-ok' : 'border-danger/60 text-danger',
+          ]}
+        >
+          {flash.message}
+        </p>
+      )}
+      <div class="mt-6">
+        <slot />
+      </div>
+    </main>
+  </body>
+</html>

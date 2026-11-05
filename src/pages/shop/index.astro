@@ -1,0 +1,52 @@
+---
+export const prerender = false;
+
+import ProductCard from '@/components/ProductCard.astro';
+import RechargeIndicator from '@/components/RechargeIndicator.astro';
+import { bulkTiers } from '@/config/commerce';
+import BaseLayout from '@/layouts/BaseLayout.astro';
+import { formatCents } from '@/lib/money';
+import { loadCatalogAvailability } from '@/server/catalog-availability';
+import { getDb } from '@/server/runtime';
+
+const catalog = await loadCatalogAvailability(getDb());
+const statusLabel = { in_stock: 'In stock', preorder: 'Founder’s Pre-Order', sold_out: 'Sold out' } as const;
+Astro.response.headers.set('Cache-Control', 'public, max-age=60');
+---
+
+<BaseLayout
+  title="Shop"
+  description="Mini cornhole-style activated charcoal bags. The Single ($9), the Tailgate Pair ($18), and bulk team pricing."
+>
+  <section class="container-page py-14">
+    <p class="eyebrow text-accent">Armory</p>
+    <h1 class="heading-display mt-2 text-5xl">Shop</h1>
+    <p class="mt-4 max-w-2xl text-fg-muted">
+      Every bag is 4×4 inches of heavy canvas around a dust-proof liner of activated bamboo charcoal. Pick a
+      size, pick a colorway, deploy.
+    </p>
+
+    <div class="mt-10 grid gap-6 md:grid-cols-2">
+      {catalog.map(({ product, status }) => (
+        <ProductCard product={product} status={statusLabel[status]} />
+      ))}
+    </div>
+
+    <div class="mt-10 grid gap-6 md:grid-cols-2">
+      <div class="card p-6">
+        <p class="eyebrow text-accent">Bulk pricing — applied automatically</p>
+        <ul class="mt-3 space-y-1 text-fg-muted">
+          {[...bulkTiers].reverse().map((t) => (
+            <li>
+              <span class="text-fg">{t.minBags}+ bags</span> → {formatCents(t.perBagCents)}/bag ({t.label})
+            </li>
+          ))}
+        </ul>
+        <a href="/bulk" class="mt-4 inline-block text-sm text-accent underline underline-offset-4">
+          Custom colors or logos? Request a quote →
+        </a>
+      </div>
+      <RechargeIndicator />
+    </div>
+  </section>
+</BaseLayout>

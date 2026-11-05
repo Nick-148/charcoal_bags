@@ -1,0 +1,123 @@
+---
+export const prerender = false;
+
+import AdminLayout from '@/layouts/AdminLayout.astro';
+import { findBySku, products } from '@/config/catalog';
+import { getInventoryMap } from '@/server/db/queries';
+import { seeOther } from '@/server/http';
+import { getDb } from '@/server/runtime';
+import { updateInventory, type AdminResult } from '@/server/services/admin';
+import { formStrings } from '@/server/validation';
+
+const db = getDb();
+let result: AdminResult | null = null;
+let failedSku: string | null = null;
+
+if (Astro.request.method === 'POST') {
+  const form = await Astro.request.formData();
+  const fields = formStrings(form, ['sku', 'mode', 'available', 'shipsBy']);
+  result = await updateInventory(
+    db,
+    {
+      sku: fields.sku!,
+      mode: fields.mode!,
+      available: fields.available!,
+      shipsBy: fields.shipsBy!,
+      active: form.get('active') === 'on',
+    },
+    Astro.locals.admin!.email,
+  );
+  if (result.ok) return seeOther(`/admin/inventory?saved=${encodeURIComponent(fields.sku!)}`);
+  Astro.response.status = 400;
+  failedSku = fields.sku ?? null;
+}
+
+const inventory = await getInventoryMap(db);
+const saved = Astro.url.searchParams.get('saved');
+const flash =
+  result && !result.ok
+    ? {
+        kind: 'error' as const,
+        message: `${failedSku ?? ''}: ${result.error} ${Object.values(result.fieldErrors ?? {}).join(' ')}`,
+      }
+    : saved && findBySku(saved)
+      ? { kind: 'ok' as const, message: `${saved} saved.` }
+      : null;
+---
+
+<AdminLayout title="Inventory" flash={flash}>
+  <p class="max-w-3xl text-sm text-fg-muted">
+    <strong class="text-fg">Available</strong> is how many more units can be sold: finished bags in stock, or
+    remaining slots in the current pre-order batch. Leave it blank for unlimited (made to order). Checkout
+    reserves units immediately and returns them if the customer abandons checkout. Pre-orders need a ship-by
+    date; customers see it before paying.
+  </p>
+
+  {products.map((product) => (
+    <section class="card mt-6 overflow-x-auto">
+      <h2 class="heading-display border-b border-line p-4 text-2xl">{product.name}</h2>
+      <div class="divide-y divide-line">
+        {product.variants.map((variant) => {
+          const row = inventory.get(variant.sku);
+          return (
+            <form
+              method="post"
+              class="grid min-w-[52rem] grid-cols-[12rem_9rem_7rem_10rem_6rem_auto] items-end gap-3 p-4"
+            >
+              <input type="hidden" name="sku" value={variant.sku} />
+              <div>
+                <p class="font-semibold">{variant.name}</p>
+                <p class="font-mono text-xs text-fg-subtle">
+                  {variant.sku}
+                  {!row && ' · no inventory row'}
+                </p>
+              </div>
+              <div>
+                <label class="field-label" for={`mode-${variant.sku}`}>
+                  Mode
+                </label>
+                <select class="field py-2" id={`mode-${variant.sku}`} name="mode">
+                  <option value="preorder" selected={(row?.mode ?? 'preorder') === 'preorder'}>
+                    Pre-order
+                  </option>
+                  <option value="in_stock" selected={row?.mode === 'in_stock'}>
+                    In stock
+                  </option>
+                </select>
+              </div>
+              <div>
+                <label class="field-label" for={`available-${variant.sku}`}>
+                  Available
+                </label>
+                <input
+                  class="field py-2 font-mono"
+                  id={`available-${variant.sku}`}
+                  name="available"
+                  inputmode="numeric"
+                  placeholder="∞"
+                  value={row?.available ?? ''}
+                />
+              </div>
+              <div>
+                <label class="field-label" for={`ships-${variant.sku}`}>
+                  Ships by
+                </label>
+                <input
+                  class="field py-2"
+                  id={`ships-${variant.sku}`}
+                  name="shipsBy"
+                  type="date"
+                  value={row?.ships_by ?? ''}
+                />
+              </div>
+              <label class="flex items-center gap-2 pb-2.5 text-sm">
+                <input type="checkbox" name="active" checked={row?.active === 1} /> Active
+              </label>
+              <button class="btn-secondary min-h-10 justify-self-start px-4 py-2 text-xs">Save</button>
+            </form>
+          );
+        })}
+      </div>
+    </section>
+  ))}
+</AdminLayout>

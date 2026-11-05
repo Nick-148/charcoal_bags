@@ -1,0 +1,27 @@
+---
+import { faq } from '@/content/faq';
+
+interface Props {
+  limit?: number;
+}
+const { limit } = Astro.props;
+const entries = limit ? faq.slice(0, limit) : faq;
+---
+
+<div class="divide-y divide-line border-y border-line">
+  {entries.map((entry) => (
+    <details class="group py-4">
+      <summary class="flex cursor-pointer list-none items-start justify-between gap-4 font-semibold [&::-webkit-details-marker]:hidden">
+        <span>{entry.q}</span>
+        <span class="font-mono text-accent transition-transform group-open:rotate-45" aria-hidden="true">
+          +
+        </span>
+      </summary>
+      <div class="mt-3 space-y-3 text-fg-muted">
+        {entry.a.map((p) => (
+          <p class="leading-relaxed">{p}</p>
+        ))}
+      </div>
+    </details>
+  ))}
+</div>

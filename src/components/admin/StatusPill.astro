@@ -1,0 +1,32 @@
+---
+interface Props {
+  status: string;
+}
+const { status } = Astro.props;
+const tone: Record<string, string> = {
+  paid: 'border-ok/50 text-ok',
+  delivered: 'border-ok/50 text-ok',
+  shipped: 'border-ok/50 text-ok',
+  replied: 'border-ok/50 text-ok',
+  pending: 'border-warn/50 text-warn',
+  processing: 'border-warn/50 text-warn',
+  new: 'border-warn/50 text-warn',
+  in_production: 'border-accent/50 text-accent',
+  ready_to_ship: 'border-accent/50 text-accent',
+  in_progress: 'border-accent/50 text-accent',
+  failed: 'border-danger/60 text-danger',
+  refunded: 'border-danger/60 text-danger',
+  partially_refunded: 'border-danger/60 text-danger',
+  canceled: 'border-danger/60 text-danger',
+  spam: 'border-danger/60 text-danger',
+};
+---
+
+<span
+  class:list={[
+    'inline-block rounded-sm border px-1.5 py-0.5 font-mono text-[11px] uppercase',
+    tone[status] ?? 'border-line-strong text-fg-subtle',
+  ]}
+>
+  {status.replaceAll('_', ' ')}
+</span>

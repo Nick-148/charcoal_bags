@@ -1,0 +1,91 @@
+---
+import Logo from '@/components/Logo.astro';
+import { site } from '@/config/site';
+
+const year = new Date().getFullYear();
+---
+
+<footer class="mt-24 border-t border-line bg-surface-sunken">
+  <div class="container-page grid gap-10 py-12 md:grid-cols-4">
+    <div class="md:col-span-2">
+      <Logo />
+      <p class="mt-4 max-w-sm text-sm text-fg-muted">{site.description}</p>
+      <p class="eyebrow mt-4 text-fg-subtle">{site.motto.join(' ')}</p>
+    </div>
+    <nav aria-label="Shop">
+      <p class="eyebrow mb-3 text-fg-subtle">Shop</p>
+      <ul class="space-y-2 text-sm text-fg-muted">
+        <li>
+          <a class="hover:text-accent" href="/shop/the-single">
+            The Single
+          </a>
+        </li>
+        <li>
+          <a class="hover:text-accent" href="/shop/tailgate-pair">
+            Tailgate Pair
+          </a>
+        </li>
+        <li>
+          <a class="hover:text-accent" href="/bulk">
+            Bulk &amp; team orders
+          </a>
+        </li>
+        <li>
+          <a class="hover:text-accent" href="/the-vibe#faq">
+            FAQ
+          </a>
+        </li>
+      </ul>
+    </nav>
+    <nav aria-label="Company">
+      <p class="eyebrow mb-3 text-fg-subtle">Comms</p>
+      <ul class="space-y-2 text-sm text-fg-muted">
+        <li>
+          <a class="hover:text-accent" href="/contact">
+            Contact
+          </a>
+        </li>
+        <li>
+          <a class="hover:text-accent" href={`mailto:${site.contact.supportEmail}`}>
+            {site.contact.supportEmail}
+          </a>
+        </li>
+        <li>
+          <a class="hover:text-accent" href={site.social.instagram} rel="noopener noreferrer">
+            Instagram
+          </a>
+        </li>
+        <li>
+          <a class="hover:text-accent" href={site.social.tiktok} rel="noopener noreferrer">
+            TikTok
+          </a>
+        </li>
+      </ul>
+    </nav>
+  </div>
+  <div class="border-t border-line">
+    <div class="container-page flex flex-col gap-3 py-6 text-xs text-fg-subtle md:flex-row md:items-center md:justify-between">
+      <p>
+        © {year} {site.name} · {site.location}
+      </p>
+      <p class="max-w-xl">{site.safetyNote}</p>
+      <ul class="flex gap-4">
+        <li>
+          <a class="hover:text-accent" href="/legal/privacy">
+            Privacy
+          </a>
+        </li>
+        <li>
+          <a class="hover:text-accent" href="/legal/terms">
+            Terms
+          </a>
+        </li>
+        <li>
+          <a class="hover:text-accent" href="/legal/shipping-returns">
+            Shipping &amp; returns
+          </a>
+        </li>
+      </ul>
+    </div>
+  </div>
+</footer>

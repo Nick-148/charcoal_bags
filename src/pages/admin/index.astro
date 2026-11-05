@@ -1,0 +1,125 @@
+---
+export const prerender = false;
+
+import StatusPill from '@/components/admin/StatusPill.astro';
+import AdminLayout from '@/layouts/AdminLayout.astro';
+import { formatShipDate } from '@/lib/availability';
+import { formatCentsExact } from '@/lib/money';
+import { listInquiries, listOrders } from '@/server/db/queries';
+import { getDb } from '@/server/runtime';
+import { getDashboardStats } from '@/server/services/admin';
+
+const db = getDb();
+const [stats, toFulfill, inquiries] = await Promise.all([
+  getDashboardStats(db),
+  listOrders(db, 'to_fulfill', { limit: 8 }),
+  listInquiries(db, { status: 'open', limit: 5 }),
+]);
+const llcProgress = Math.max(0, Math.min(stats.llcTriggerCents, stats.estimatedNetProfitCents));
+
+const tiles = [
+  { label: 'To fulfill', value: String(stats.toFulfill), href: '/admin/orders?filter=to_fulfill' },
+  { label: 'Open inquiries', value: String(stats.openInquiries), href: '/admin/inquiries' },
+  { label: 'Revenue this month', value: formatCentsExact(stats.monthRevenueCents) },
+  { label: 'Bags sold (all time)', value: String(stats.bagsSold) },
+];
+---
+
+<AdminLayout title="Overview">
+  {stats.needsReview > 0 && (
+    <p class="mb-6 rounded-sm border border-danger/60 p-3 text-sm text-danger" role="alert">
+      {stats.needsReview} order{stats.needsReview === 1 ? '' : 's'} need review (paid after stock was released
+      or amount mismatch).{' '}
+      <a href="/admin/orders?filter=to_fulfill" class="underline">
+        Check orders
+      </a>
+    </p>
+  )}
+  <div class="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+    {tiles.map((t) => (
+      <div class="card p-5">
+        <p class="eyebrow text-fg-subtle">{t.label}</p>
+        <p class="mt-2 font-mono text-3xl">
+          {t.href ? (
+            <a class="hover:text-accent" href={t.href}>
+              {t.value}
+            </a>
+          ) : (
+            t.value
+          )}
+        </p>
+      </div>
+    ))}
+  </div>
+
+  <section class="card mt-6 p-5" aria-labelledby="llc">
+    <div class="flex flex-wrap items-baseline justify-between gap-2">
+      <h2 id="llc" class="eyebrow text-accent">
+        LLC trigger: first {formatCentsExact(stats.llcTriggerCents)} net profit
+      </h2>
+      <p class="font-mono text-sm">{formatCentsExact(stats.estimatedNetProfitCents)} est.</p>
+    </div>
+    <progress
+      class="mt-3 h-2 w-full appearance-none overflow-hidden rounded-sm [&::-moz-progress-bar]:bg-accent [&::-webkit-progress-bar]:bg-surface-sunken [&::-webkit-progress-value]:bg-accent"
+      max={stats.llcTriggerCents}
+      value={llcProgress}
+      aria-label="Progress to LLC filing trigger"
+    ></progress>
+    <p class="mt-2 text-xs text-fg-subtle">
+      Rough estimate: net revenue − $1.50 COGS/bag − Stripe fees − ~$4.50 label/order. When it crosses the
+      line, file the NH LLC (docs/business/launch-checklist.md).
+    </p>
+  </section>
+
+  <div class="mt-6 grid gap-6 lg:grid-cols-2">
+    <section class="card p-5" aria-labelledby="fulfil-heading">
+      <div class="flex items-center justify-between">
+        <h2 id="fulfil-heading" class="eyebrow text-fg-subtle">
+          Next to ship
+        </h2>
+        <a href="/admin/orders/export.csv" class="text-xs text-accent underline">
+          Export shipping CSV
+        </a>
+      </div>
+      {toFulfill.length === 0 ? (
+        <p class="mt-3 text-sm text-fg-muted">Nothing waiting. Go film a TikTok.</p>
+      ) : (
+        <ul class="mt-3 divide-y divide-line">
+          {toFulfill.map((o) => (
+            <li class="flex items-center justify-between gap-3 py-2 text-sm">
+              <a href={`/admin/orders/${o.number}`} class="font-mono text-accent hover:underline">
+                {o.number}
+              </a>
+              <span class="text-fg-muted">
+                {o.bag_count} bags
+                {o.is_preorder ? ` · pre-order${o.ships_by ? ` by ${formatShipDate(o.ships_by)}` : ''}` : ''}
+              </span>
+              <StatusPill status={o.fulfillment_status} />
+            </li>
+          ))}
+        </ul>
+      )}
+    </section>
+    <section class="card p-5" aria-labelledby="inq-heading">
+      <h2 id="inq-heading" class="eyebrow text-fg-subtle">
+        Open inquiries
+      </h2>
+      {inquiries.length === 0 ? (
+        <p class="mt-3 text-sm text-fg-muted">Inbox zero.</p>
+      ) : (
+        <ul class="mt-3 divide-y divide-line">
+          {inquiries.map((i) => (
+            <li class="flex items-center justify-between gap-3 py-2 text-sm">
+              <a href={`/admin/inquiries/${i.id}`} class="truncate hover:text-accent">
+                {i.kind === 'bulk'
+                  ? `Bulk: ${i.organization ?? i.name} (${i.quantity ?? '?'} bags)`
+                  : `${i.name}: ${i.topic ?? 'Message'}`}
+              </a>
+              <StatusPill status={i.status} />
+            </li>
+          ))}
+        </ul>
+      )}
+    </section>
+  </div>
+</AdminLayout>

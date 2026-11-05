@@ -1,0 +1,15 @@
+---
+import { site } from '@/config/site';
+---
+
+{site.preorderCampaign.active && (
+  <div class="border-b border-secondary-strong bg-secondary">
+    <p class="container-page flex flex-wrap items-center justify-center gap-x-3 gap-y-1 py-2 text-center text-sm">
+      <span class="eyebrow text-accent-strong">{site.preorderCampaign.label}</span>
+      <span class="text-fg">{site.preorderCampaign.message}</span>
+      <a href="/shop" class="font-semibold text-fg underline underline-offset-4 hover:text-accent-strong">
+        Reserve yours →
+      </a>
+    </p>
+  </div>
+)}

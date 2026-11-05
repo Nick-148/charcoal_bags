@@ -1,0 +1,125 @@
+---
+export const prerender = false;
+
+import StatusPill from '@/components/admin/StatusPill.astro';
+import AdminLayout from '@/layouts/AdminLayout.astro';
+import { formatShipDate } from '@/lib/availability';
+import { formatCentsExact } from '@/lib/money';
+import { isOrderListFilter, listOrders, type OrderListFilter } from '@/server/db/queries';
+import { getDb } from '@/server/runtime';
+
+const PAGE_SIZE = 50;
+const requested = Astro.url.searchParams.get('filter');
+const filter: OrderListFilter = isOrderListFilter(requested) ? requested : 'to_fulfill';
+const page = Math.max(1, Math.min(1000, Number.parseInt(Astro.url.searchParams.get('page') ?? '1', 10) || 1));
+const orders = await listOrders(getDb(), filter, { limit: PAGE_SIZE + 1, offset: (page - 1) * PAGE_SIZE });
+const hasMore = orders.length > PAGE_SIZE;
+
+const filters: { id: OrderListFilter; label: string }[] = [
+  { id: 'to_fulfill', label: 'To fulfill' },
+  { id: 'shipped', label: 'Shipped' },
+  { id: 'pending', label: 'Awaiting payment' },
+  { id: 'refunded', label: 'Refunded / canceled' },
+  { id: 'all', label: 'All' },
+];
+const dateFmt = new Intl.DateTimeFormat('en-US', {
+  month: 'short',
+  day: 'numeric',
+  hour: 'numeric',
+  minute: '2-digit',
+  timeZone: 'America/New_York',
+});
+---
+
+<AdminLayout title="Orders">
+  <div class="flex flex-wrap items-center justify-between gap-3">
+    <nav aria-label="Order filters">
+      <ul class="flex flex-wrap gap-2">
+        {filters.map((f) => (
+          <li>
+            <a
+              href={`/admin/orders?filter=${f.id}`}
+              class:list={[
+                'btn min-h-9 px-3 py-1.5 text-xs',
+                f.id === filter
+                  ? 'bg-accent text-accent-ink'
+                  : 'border border-line-strong text-fg-muted hover:text-fg',
+              ]}
+            >
+              {f.label}
+            </a>
+          </li>
+        ))}
+      </ul>
+    </nav>
+    <a href="/admin/orders/export.csv" class="btn-secondary min-h-9 px-3 py-1.5 text-xs">
+      Export to-ship CSV
+    </a>
+  </div>
+
+  <div class="card mt-4 overflow-x-auto">
+    <table class="w-full min-w-[48rem] text-left text-sm">
+      <thead class="border-b border-line text-fg-subtle">
+        <tr>
+          <th class="eyebrow p-3 font-semibold">Order</th>
+          <th class="eyebrow p-3 font-semibold">Placed</th>
+          <th class="eyebrow p-3 font-semibold">Customer</th>
+          <th class="eyebrow p-3 font-semibold">Bags</th>
+          <th class="eyebrow p-3 font-semibold">Total</th>
+          <th class="eyebrow p-3 font-semibold">Payment</th>
+          <th class="eyebrow p-3 font-semibold">Fulfillment</th>
+        </tr>
+      </thead>
+      <tbody class="divide-y divide-line">
+        {orders.slice(0, PAGE_SIZE).map((o) => (
+          <tr class:list={[o.needs_review === 1 && 'bg-danger/5']}>
+            <td class="p-3">
+              <a class="font-mono text-accent hover:underline" href={`/admin/orders/${o.number}`}>
+                {o.number}
+              </a>
+              {o.needs_review === 1 && <span class="ml-1 text-xs text-danger">review</span>}
+            </td>
+            <td class="p-3 text-fg-muted">{dateFmt.format(new Date(o.created_at))}</td>
+            <td class="p-3">{o.customer_name ?? <span class="text-fg-subtle">—</span>}</td>
+            <td class="p-3 font-mono">
+              {o.bag_count}
+              {o.is_preorder === 1 && (
+                <span class="ml-1 text-xs text-fg-subtle">
+                  PO{o.ships_by ? ` ${formatShipDate(o.ships_by)}` : ''}
+                </span>
+              )}
+            </td>
+            <td class="p-3 font-mono">{formatCentsExact(o.total_cents)}</td>
+            <td class="p-3">
+              <StatusPill status={o.payment_status} />
+            </td>
+            <td class="p-3">
+              <StatusPill status={o.fulfillment_status} />
+            </td>
+          </tr>
+        ))}
+        {orders.length === 0 && (
+          <tr>
+            <td colspan="7" class="p-6 text-center text-fg-muted">
+              No orders here.
+            </td>
+          </tr>
+        )}
+      </tbody>
+    </table>
+  </div>
+  <div class="mt-4 flex justify-between text-sm">
+    {page > 1 ? (
+      <a class="text-accent underline" href={`/admin/orders?filter=${filter}&page=${page - 1}`}>
+        ← Newer
+      </a>
+    ) : (
+      <span></span>
+    )}
+    {hasMore && (
+      <a class="text-accent underline" href={`/admin/orders?filter=${filter}&page=${page + 1}`}>
+        Older →
+      </a>
+    )}
+  </div>
+</AdminLayout>

@@ -1,0 +1,109 @@
+---
+/**
+ * Development-only stand-in for the hosted Stripe Checkout page (PAYMENTS_PROVIDER=fake).
+ * 404s whenever the fake provider is not active, which config guarantees in production.
+ */
+export const prerender = false;
+
+import BaseLayout from '@/layouts/BaseLayout.astro';
+import { formatCentsExact } from '@/lib/money';
+import { getOrderById, getOrderItems } from '@/server/db/queries';
+import { seeOther } from '@/server/http';
+import { decodeFakeSessionId, fakeCompletedSession } from '@/server/payments/fake';
+import { getConfig, getDb, orderDeps } from '@/server/runtime';
+import { applyCheckoutSession } from '@/server/services/orders';
+
+const config = getConfig();
+if (config.payments.provider !== 'fake' || config.environment === 'production') {
+  return Astro.rewrite('/404');
+}
+
+const sessionId = Astro.url.searchParams.get('session_id') ?? '';
+const decoded = decodeFakeSessionId(sessionId);
+const order = decoded ? await getOrderById(getDb(), decoded.orderId) : null;
+if (!decoded || !order) return Astro.rewrite('/404');
+
+if (Astro.request.method === 'POST') {
+  const form = await Astro.request.formData();
+  const outcome = form.get('outcome');
+  const deps = orderDeps(Astro.request)!;
+  if (outcome === 'pay') {
+    await applyCheckoutSession(
+      deps,
+      fakeCompletedSession(
+        sessionId,
+        order.id,
+        order.total_cents,
+        {
+          email: String(form.get('email') ?? 'test@example.com'),
+          name: String(form.get('name') ?? 'Test Customer'),
+        },
+        { line1: '1 Elm St', city: 'Concord', state: 'NH', postalCode: '03301' },
+      ),
+    );
+    return seeOther(`/checkout/success?session_id=${encodeURIComponent(sessionId)}`);
+  }
+  if (outcome === 'expire') {
+    await applyCheckoutSession(deps, {
+      ...(await deps.payments.retrieveCheckoutSession(sessionId)),
+      status: 'expired',
+    });
+  }
+  return seeOther('/cart?checkout=canceled');
+}
+
+const items = await getOrderItems(getDb(), order.id);
+---
+
+<BaseLayout title="Fake checkout (dev)" noindex>
+  <section class="container-page max-w-xl py-14">
+    <p class="eyebrow text-warn">Development only · no real payment</p>
+    <h1 class="heading-display mt-2 text-4xl">Fake checkout</h1>
+    <p class="mt-2 text-fg-muted">
+      Order {order.number} · status {order.payment_status}
+    </p>
+    <ul class="card mt-6 divide-y divide-line">
+      {items.map((i) => (
+        <li class="flex justify-between p-3 text-sm">
+          <span>
+            {i.quantity} × {i.product_name} — {i.variant_name}
+          </span>
+          <span class="font-mono">{formatCentsExact(i.unit_cents * i.quantity)}</span>
+        </li>
+      ))}
+      <li class="flex justify-between p-3 text-sm">
+        <span>Shipping</span>
+        <span class="font-mono">{formatCentsExact(order.shipping_cents)}</span>
+      </li>
+      <li class="flex justify-between p-3 font-semibold">
+        <span>Total</span>
+        <span class="font-mono">{formatCentsExact(order.total_cents)}</span>
+      </li>
+    </ul>
+    <form method="post" class="mt-6 space-y-4">
+      <div>
+        <label class="field-label" for="name">
+          Name
+        </label>
+        <input class="field" id="name" name="name" value="Test Customer" />
+      </div>
+      <div>
+        <label class="field-label" for="email">
+          Email
+        </label>
+        <input class="field" id="email" name="email" type="email" value="test@example.com" />
+      </div>
+      <div class="flex flex-wrap gap-3">
+        <button class="btn-primary" name="outcome" value="pay">
+          Simulate successful payment
+        </button>
+        <button class="btn-secondary" name="outcome" value="cancel">
+          Cancel (back to cart)
+        </button>
+        <button class="btn-secondary" name="outcome" value="expire">
+          Expire session
+        </button>
+      </div>
+    </form>
+  </section>
+</BaseLayout>

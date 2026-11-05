@@ -1,0 +1,27 @@
+---
+/** "Recharge in the sun" indicator required on product pages. */
+interface Props {
+  compact?: boolean;
+}
+const { compact = false } = Astro.props;
+---
+
+<div class:list={['card flex items-center gap-4', compact ? 'p-3' : 'p-5']}>
+  <svg
+    viewBox="0 0 48 48"
+    class:list={['shrink-0 text-warn', compact ? 'h-9 w-9' : 'h-12 w-12']}
+    aria-hidden="true"
+  >
+    <circle cx="24" cy="24" r="9" fill="currentColor"></circle>
+    <g stroke="currentColor" stroke-width="3" stroke-linecap="round">
+      <path d="M24 4v6M24 38v6M4 24h6M38 24h6M9.9 9.9l4.2 4.2M33.9 33.9l4.2 4.2M9.9 38.1l4.2-4.2M33.9 14.1l4.2-4.2"></path>
+    </g>
+  </svg>
+  <div>
+    <p class="eyebrow text-warn">Recharge protocol</p>
+    <p class:list={['text-fg', compact ? 'text-sm' : '']}>
+      <strong>1–2 hrs of direct sun, once a month.</strong>
+      {!compact && <span class="text-fg-muted"> Flip halfway. Keep it dry. Good for up to 2 years.</span>}
+    </p>
+  </div>
+</div>

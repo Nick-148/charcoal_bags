@@ -1,0 +1,42 @@
+---
+// TEMPLATE — values come from src/config/commerce.ts so the policy can't drift from checkout.
+import { shipping } from '@/config/commerce';
+import { site } from '@/config/site';
+import LegalLayout from '@/layouts/LegalLayout.astro';
+import { formatCents } from '@/lib/money';
+---
+
+<LegalLayout title="Shipping & returns" updated="November 4, 2026">
+  <h2>Where we ship</h2>
+  <p>United States addresses only, for now.</p>
+  <h2>Rates</h2>
+  <ul>
+    <li>Flat {formatCents(shipping.flatRateCents)} per order via USPS.</li>
+    <li>Free on orders of {formatCents(shipping.freeThresholdCents)} or more (after bulk pricing).</li>
+  </ul>
+  <h2>When it ships</h2>
+  <ul>
+    <li>
+      <strong>In-stock items:</strong> {shipping.inStockDispatch.toLowerCase()}.
+    </li>
+    <li>
+      <strong>Founder’s Pre-Orders:</strong> by the ship-by date shown on the product page and your
+      confirmation, or within 30 days if no date is shown. Orders containing both ship together when the
+      pre-order item is ready.
+    </li>
+  </ul>
+  <p>You will get a tracking number by email when your order ships.</p>
+  <h2>Returns</h2>
+  <p>
+    Unused bags can be returned within 30 days of delivery for a refund of the item price. Email
+    <a href={`mailto:${site.contact.supportEmail}`}>{site.contact.supportEmail}</a> with your order number to
+    start a return. Return shipping is paid by the customer unless the item arrived damaged or wrong.
+  </p>
+  <h2>Damaged or wrong items</h2>
+  <p>
+    If something arrives damaged or isn’t what you ordered, email us within 14 days with a photo and we will
+    replace or refund it, including shipping.
+  </p>
+  <h2>Pre-order cancellations</h2>
+  <p>Cancel any pre-order before it ships for a full refund, including shipping.</p>
+</LegalLayout>

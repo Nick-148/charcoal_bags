@@ -1,0 +1,18 @@
+---
+export const prerender = false;
+
+import CartView from '@/components/cart/CartView';
+import BaseLayout from '@/layouts/BaseLayout.astro';
+
+const canceled = Astro.url.searchParams.get('checkout') === 'canceled';
+---
+
+<BaseLayout title="Cart" noindex>
+  <section class="container-page py-14">
+    <p class="eyebrow text-accent">Loadout</p>
+    <h1 class="heading-display mt-2 text-5xl">Your cart</h1>
+    <div class="mt-8">
+      <CartView client:load canceled={canceled} />
+    </div>
+  </section>
+</BaseLayout>

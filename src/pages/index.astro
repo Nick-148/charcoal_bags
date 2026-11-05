@@ -1,0 +1,224 @@
+---
+import BagArt from '@/components/BagArt';
+import Faq from '@/components/Faq.astro';
+import PreorderBanner from '@/components/PreorderBanner.astro';
+import ProductCard from '@/components/ProductCard.astro';
+import RechargeIndicator from '@/components/RechargeIndicator.astro';
+import { products } from '@/config/catalog';
+import { bulkTiers, shipping } from '@/config/commerce';
+import { site } from '@/config/site';
+import BaseLayout from '@/layouts/BaseLayout.astro';
+import { formatCents } from '@/lib/money';
+
+const smallestTier = bulkTiers.at(-1)!;
+
+const steps = [
+  {
+    code: '01',
+    title: 'Deploy',
+    body: 'Drop it in a sneaker, gym bag, locker, glovebox, or closet. No batteries, no outlet, no spray.',
+  },
+  {
+    code: '02',
+    title: 'Neutralize',
+    body: 'Porous activated bamboo charcoal traps odor molecules and excess moisture instead of masking them with perfume.',
+  },
+  {
+    code: '03',
+    title: 'Recharge',
+    body: '1–2 hours of direct sun once a month resets it. Good for up to two years of service.',
+  },
+];
+
+const comparison = [
+  { feature: 'Removes odor instead of masking it', us: true, spray: false, mesh: true },
+  { feature: 'Zero added perfume or chemicals', us: true, spray: false, mesh: true },
+  { feature: 'Reusable for up to 2 years', us: true, spray: false, mesh: true },
+  { feature: 'Durable canvas that survives a gym bag', us: true, spray: false, mesh: false },
+  { feature: 'Looks good on a desk', us: true, spray: false, mesh: false },
+  { feature: 'Doubles as desk cornhole', us: true, spray: false, mesh: false },
+];
+
+const deployments = [
+  'Sneakers & cleats',
+  'Gym bags',
+  'Lockers',
+  'Hockey & lax bags',
+  'Cars',
+  'Dorm rooms',
+  'Closets',
+  'Tailgate gear',
+];
+---
+
+<BaseLayout>
+  <PreorderBanner />
+
+  <section class="relative overflow-hidden border-b border-line">
+    <div class="container-page grid items-center gap-10 py-16 md:grid-cols-[1.15fr_1fr] md:py-24">
+      <div>
+        <p class="eyebrow text-accent">{site.tagline}</p>
+        <h1 class="heading-display mt-4 text-5xl leading-[0.95] sm:text-6xl lg:text-7xl">
+          {site.heroHeadline}
+        </h1>
+        <p class="mt-6 max-w-xl text-lg text-fg-muted">{site.heroSubhead}</p>
+        <div class="mt-8 flex flex-wrap gap-3">
+          <a href="/shop/the-single" class="btn-primary">
+            Shop the Single — {formatCents(products[0]!.priceCents)}
+          </a>
+          <a href="/shop/tailgate-pair" class="btn-olive">
+            Tailgate Pair — {formatCents(products[1]!.priceCents)}
+          </a>
+          <a href="/bulk" class="btn-secondary">
+            Bulk &amp; team orders
+          </a>
+        </div>
+        <p class="eyebrow mt-6 text-fg-subtle">
+          Free US shipping over {formatCents(shipping.freeThresholdCents)} · 0 perfumes · 1 monthly sun
+          recharge
+        </p>
+      </div>
+      <div class="relative mx-auto w-full max-w-md">
+        <div class="stitch absolute inset-4 rounded-sm" aria-hidden="true"></div>
+        <BagArt
+          colorways={['blackout', 'olive']}
+          className="relative w-full"
+          title="Two mini cornhole charcoal bags in Blackout and Olive Drab"
+        />
+      </div>
+    </div>
+  </section>
+
+  <section class="container-page py-20" aria-labelledby="how-heading">
+    <p class="eyebrow text-accent">Field manual</p>
+    <h2 id="how-heading" class="heading-display mt-2 text-4xl">
+      {site.motto.join(' ')}
+    </h2>
+    <ol class="mt-10 grid gap-6 md:grid-cols-3">
+      {steps.map((step) => (
+        <li class="card p-6">
+          <p class="font-mono text-sm text-accent">{step.code}</p>
+          <h3 class="heading-display mt-2 text-3xl">{step.title}</h3>
+          <p class="mt-3 text-fg-muted">{step.body}</p>
+        </li>
+      ))}
+    </ol>
+    <div class="mt-6">
+      <RechargeIndicator />
+    </div>
+  </section>
+
+  <section class="border-y border-line bg-surface-sunken py-20" aria-labelledby="shop-heading">
+    <div class="container-page">
+      <div class="flex flex-wrap items-end justify-between gap-4">
+        <div>
+          <p class="eyebrow text-accent">Choose your loadout</p>
+          <h2 id="shop-heading" class="heading-display mt-2 text-4xl">
+            Single, pair, or the whole squad
+          </h2>
+        </div>
+        <a href="/shop" class="btn-secondary">
+          All colorways
+        </a>
+      </div>
+      <div class="mt-10 grid gap-6 md:grid-cols-3">
+        {products.map((product) => (
+          <ProductCard product={product} />
+        ))}
+        <a
+          href="/bulk"
+          class="card stitch group flex flex-col justify-between gap-6 p-6 transition-colors hover:border-accent"
+        >
+          <div>
+            <p class="eyebrow text-accent">Teams · Clubs · Events</p>
+            <h3 class="heading-display mt-2 text-3xl">Bulk orders</h3>
+            <p class="mt-3 text-fg-muted">
+              {smallestTier.minBags}+ bags drops to {formatCents(smallestTier.perBagCents)} a bag,
+              automatically. Custom team colors and logos quoted on request.
+            </p>
+          </div>
+          <span class="btn-primary self-start">Get team pricing</span>
+        </a>
+      </div>
+    </div>
+  </section>
+
+  <section class="container-page py-20" aria-labelledby="compare-heading">
+    <p class="eyebrow text-accent">Threat assessment</p>
+    <h2 id="compare-heading" class="heading-display mt-2 text-4xl">
+      Not another boring air freshener
+    </h2>
+    <p class="mt-4 max-w-2xl text-fg-muted">
+      Sprays and plug-ins drown funk in fake pine. Mesh charcoal bags work but look like something from a
+      hardware store. We kept the charcoal and gave it a reason to live on your desk.
+    </p>
+    <div class="mt-8 overflow-x-auto">
+      <table class="w-full min-w-[36rem] border-collapse text-left text-sm">
+        <thead>
+          <tr class="border-b border-line-strong">
+            <th scope="col" class="py-3 pr-4 font-normal text-fg-subtle">
+              <span class="sr-only">Feature</span>
+            </th>
+            <th scope="col" class="eyebrow px-3 py-3 text-accent">
+              {site.shortName}
+            </th>
+            <th scope="col" class="eyebrow px-3 py-3 text-fg-subtle">
+              Sprays &amp; plug-ins
+            </th>
+            <th scope="col" class="eyebrow px-3 py-3 text-fg-subtle">
+              Mesh charcoal bags
+            </th>
+          </tr>
+        </thead>
+        <tbody>
+          {comparison.map((row) => (
+            <tr class="border-b border-line">
+              <th scope="row" class="py-3 pr-4 font-normal text-fg">
+                {row.feature}
+              </th>
+              {[row.us, row.spray, row.mesh].map((ok) => (
+                <td class:list={['px-3 py-3 font-mono', ok ? 'text-ok' : 'text-fg-subtle']}>
+                  {ok ? '✔' : '—'}
+                  <span class="sr-only">{ok ? 'Yes' : 'No'}</span>
+                </td>
+              ))}
+            </tr>
+          ))}
+        </tbody>
+      </table>
+    </div>
+  </section>
+
+  <section class="border-y border-line bg-surface-sunken py-20" aria-labelledby="deploy-heading">
+    <div class="container-page">
+      <p class="eyebrow text-accent">Areas of operation</p>
+      <h2 id="deploy-heading" class="heading-display mt-2 text-4xl">
+        Where funk goes to die
+      </h2>
+      <ul class="mt-8 flex flex-wrap gap-3">
+        {deployments.map((d) => (
+          <li class="card eyebrow px-4 py-3 text-fg">{d}</li>
+        ))}
+      </ul>
+      <p class="mt-8 max-w-2xl text-fg-muted">
+        Field reports coming soon. Tag <span class="text-accent">{site.social.handle}</span> with your most
+        biohazardous gym bag and we might feature it.
+      </p>
+    </div>
+  </section>
+
+  <section class="container-page py-20" aria-labelledby="faq-heading">
+    <div class="grid gap-10 md:grid-cols-[1fr_2fr]">
+      <div>
+        <p class="eyebrow text-accent">Debrief</p>
+        <h2 id="faq-heading" class="heading-display mt-2 text-4xl">
+          Questions
+        </h2>
+        <a href="/the-vibe#faq" class="btn-secondary mt-6">
+          Full FAQ
+        </a>
+      </div>
+      <Faq limit={4} />
+    </div>
+  </section>
+</BaseLayout>

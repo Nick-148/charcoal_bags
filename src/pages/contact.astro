@@ -1,0 +1,168 @@
+---
+export const prerender = false;
+
+import FormError from '@/components/FormError.astro';
+import Turnstile from '@/components/Turnstile.astro';
+import { site } from '@/config/site';
+import BaseLayout from '@/layouts/BaseLayout.astro';
+import { seeOther } from '@/server/http';
+import { getClientIp, inquiryDeps, turnstileSiteKey } from '@/server/runtime';
+import { HONEYPOT_FIELD, submitInquiry } from '@/server/services/inquiries';
+import { contactTopics } from '@/server/validation';
+
+const deps = inquiryDeps(Astro.request);
+let values: Record<string, string> = { name: '', email: '', topic: '', message: '' };
+let errors: Record<string, string> = {};
+let formError: string | undefined;
+
+if (Astro.request.method === 'POST') {
+  if (!deps) {
+    Astro.response.status = 503;
+    formError = 'The contact form is temporarily offline. Email us instead.';
+  } else {
+    const result = await submitInquiry(
+      deps,
+      'contact',
+      await Astro.request.formData(),
+      getClientIp(Astro.request),
+    );
+    if (result.ok) return seeOther('/contact?sent=1');
+    Astro.response.status = result.status;
+    values = result.values;
+    errors = result.fieldErrors;
+    formError = result.formError ?? 'Fix the highlighted fields and send again.';
+  }
+}
+
+const sent = Astro.url.searchParams.get('sent') === '1';
+const siteKey = turnstileSiteKey();
+Astro.response.headers.set('Cache-Control', 'no-store');
+---
+
+<BaseLayout
+  title="Contact"
+  description={`Questions about an order, wholesale, or press? Reach ${site.name}.`}
+>
+  <section class="container-page grid gap-12 py-14 md:grid-cols-[1fr_1.4fr]">
+    <div>
+      <p class="eyebrow text-accent">Comms channel</p>
+      <h1 class="heading-display mt-2 text-5xl">Contact</h1>
+      <p class="mt-4 text-fg-muted">
+        Order question, wholesale idea, collab, or a gym-bag horror story. Send it over. We reply{' '}
+        {site.contact.responseTime}.
+      </p>
+      <p class="mt-6 text-sm text-fg-muted">
+        Prefer email?{' '}
+        <a class="text-accent underline underline-offset-4" href={`mailto:${site.contact.supportEmail}`}>
+          {site.contact.supportEmail}
+        </a>
+      </p>
+      <p class="mt-2 text-sm text-fg-muted">
+        Ordering 10+ bags? Use the{' '}
+        <a class="text-accent underline underline-offset-4" href="/bulk">
+          bulk quote form
+        </a>
+        .
+      </p>
+    </div>
+
+    <div>
+      {sent ? (
+        <div class="card stitch p-8" role="status">
+          <p class="heading-display text-3xl">Message received</p>
+          <p class="mt-2 text-fg-muted">We will get back to you {site.contact.responseTime}.</p>
+          <a href="/shop" class="btn-secondary mt-6">
+            Back to the shop
+          </a>
+        </div>
+      ) : (
+        <form method="post" class="card space-y-5 p-6" novalidate>
+          {formError && (
+            <p role="alert" class="rounded-sm border border-danger/60 p-3 text-sm text-danger">
+              {formError}
+            </p>
+          )}
+          <div>
+            <label class="field-label" for="name">
+              Name
+            </label>
+            <input
+              class="field"
+              id="name"
+              name="name"
+              autocomplete="name"
+              required
+              maxlength="100"
+              value={values.name}
+              aria-invalid={errors.name ? 'true' : undefined}
+              aria-describedby={errors.name ? 'name-error' : undefined}
+            />
+            <FormError id="name-error" message={errors.name} />
+          </div>
+          <div>
+            <label class="field-label" for="email">
+              Email
+            </label>
+            <input
+              class="field"
+              id="email"
+              name="email"
+              type="email"
+              autocomplete="email"
+              required
+              maxlength="254"
+              value={values.email}
+              aria-invalid={errors.email ? 'true' : undefined}
+              aria-describedby={errors.email ? 'email-error' : undefined}
+            />
+            <FormError id="email-error" message={errors.email} />
+          </div>
+          <div>
+            <label class="field-label" for="topic">
+              Topic
+            </label>
+            <select
+              class="field"
+              id="topic"
+              name="topic"
+              required
+              aria-invalid={errors.topic ? 'true' : undefined}
+              aria-describedby={errors.topic ? 'topic-error' : undefined}
+            >
+              <option value="">Choose one…</option>
+              {contactTopics.map((t) => (
+                <option value={t} selected={values.topic === t}>
+                  {t}
+                </option>
+              ))}
+            </select>
+            <FormError id="topic-error" message={errors.topic} />
+          </div>
+          <div>
+            <label class="field-label" for="message">
+              Message
+            </label>
+            <textarea
+              class="field min-h-36"
+              id="message"
+              name="message"
+              required
+              maxlength="4000"
+              aria-invalid={errors.message ? 'true' : undefined}
+              aria-describedby={errors.message ? 'message-error' : undefined}
+            >{values.message}</textarea>
+            <FormError id="message-error" message={errors.message} />
+          </div>
+          <div class="hidden" aria-hidden="true">
+            <label for={HONEYPOT_FIELD}>Leave this empty</label>
+            <input id={HONEYPOT_FIELD} name={HONEYPOT_FIELD} tabindex="-1" autocomplete="off" />
+          </div>
+          <Turnstile siteKey={siteKey} action="contact" />
+          <button type="submit" class="btn-primary" disabled={!deps}>
+            Send message
+          </button>
+        </form>
+      )}
+    </div>
+  </section>
+</BaseLayout>

@@ -1,0 +1,35 @@
+---
+import BagArt from '@/components/BagArt';
+import type { Product } from '@/config/catalog';
+import { formatCents } from '@/lib/money';
+
+interface Props {
+  product: Product;
+  /** Optional status line, e.g. "Founder's Pre-Order". */
+  status?: string | undefined;
+}
+const { product, status } = Astro.props;
+const hero = product.variants[0]!;
+---
+
+<a
+  href={`/shop/${product.slug}`}
+  class="card group flex flex-col overflow-hidden transition-colors hover:border-accent"
+>
+  <div class="flex aspect-[4/3] items-center justify-center bg-surface-sunken p-8">
+    <BagArt
+      colorways={hero.colorways}
+      className="h-full max-h-56 w-auto transition-transform group-hover:-rotate-3"
+    />
+  </div>
+  <div class="flex grow flex-col gap-2 p-5">
+    <div class="flex items-baseline justify-between gap-4">
+      <h3 class="heading-display text-2xl">{product.name}</h3>
+      <span class="font-mono text-lg text-accent">{formatCents(product.priceCents)}</span>
+    </div>
+    <p class="text-sm text-fg-muted">{product.shortDescription}</p>
+    <p class="eyebrow mt-auto pt-2 text-fg-subtle">
+      {product.variants.length} colorways{status ? ` · ${status}` : ''}
+    </p>
+  </div>
+</a>

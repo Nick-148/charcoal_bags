@@ -1,0 +1,122 @@
+/*
+ * Theme tokens. Brand colours and type are SEMANTIC (surface/fg/accent...), so a rebrand edits values
+ * here — not class names across the codebase. Product colorways live in src/config/catalog.ts.
+ */
+@import 'tailwindcss';
+@import '@fontsource-variable/big-shoulders-stencil/wght.css';
+@import '@fontsource-variable/inter/wght.css';
+@import '@fontsource/ibm-plex-mono/400.css';
+@import '@fontsource/ibm-plex-mono/600.css';
+
+@theme {
+  --font-display: 'Big Shoulders Stencil Variable', Impact, 'Arial Narrow', sans-serif;
+  --font-sans: 'Inter Variable', ui-sans-serif, system-ui, sans-serif;
+  --font-mono: 'IBM Plex Mono', ui-monospace, SFMono-Regular, Menlo, monospace;
+
+  /* Surfaces: matte black field kit */
+  --color-surface: #111111;
+  --color-surface-raised: #1b1b1b;
+  --color-surface-sunken: #0a0a0a;
+  --color-line: #2e2e2e;
+  --color-line-strong: #4a4a4a;
+
+  /* Foreground */
+  --color-fg: #f2eee6;
+  --color-fg-muted: #b8b2a7;
+  --color-fg-subtle: #8a857c;
+
+  /* Accent: kraft (primary CTA) + olive drab (secondary) */
+  --color-accent: #c8a97e;
+  --color-accent-strong: #dcc29b;
+  --color-accent-ink: #111111;
+  --color-secondary: #4b5320;
+  --color-secondary-strong: #6b7536;
+
+  /* Status */
+  --color-ok: #8fbf6a;
+  --color-warn: #e8b04a;
+  --color-danger: #ef7a5a;
+}
+
+@layer base {
+  html {
+    color-scheme: dark;
+    background-color: var(--color-surface);
+    color: var(--color-fg);
+    -webkit-text-size-adjust: 100%;
+  }
+  body {
+    @apply font-sans antialiased;
+    min-height: 100dvh;
+  }
+  :focus-visible {
+    outline: 2px solid var(--color-accent);
+    outline-offset: 3px;
+  }
+  ::selection {
+    background: var(--color-accent);
+    color: var(--color-accent-ink);
+  }
+}
+
+/* Custom utilities (Tailwind v4 `@utility` so they compose with variants and @apply). */
+@utility container-page {
+  @apply mx-auto w-full max-w-6xl px-4 sm:px-6;
+}
+@utility heading-display {
+  @apply font-display font-extrabold tracking-wide uppercase;
+}
+@utility eyebrow {
+  @apply font-mono text-xs font-semibold tracking-[0.18em] uppercase;
+}
+@utility btn {
+  @apply inline-flex min-h-11 cursor-pointer items-center justify-center gap-2 rounded-sm px-5 py-2.5 font-mono text-sm font-semibold tracking-wider uppercase transition-colors disabled:cursor-not-allowed disabled:opacity-50;
+}
+@utility btn-primary {
+  @apply btn bg-accent text-accent-ink hover:bg-accent-strong;
+}
+@utility btn-secondary {
+  @apply btn border border-line-strong text-fg hover:border-accent hover:text-accent;
+}
+@utility btn-olive {
+  @apply btn bg-secondary text-fg hover:bg-secondary-strong;
+}
+@utility card {
+  @apply rounded-sm border border-line bg-surface-raised;
+}
+@utility field {
+  @apply block w-full rounded-sm border border-line-strong bg-surface-sunken px-3 py-2.5 text-fg placeholder:text-fg-subtle focus:border-accent focus:outline-none;
+}
+@utility field-label {
+  @apply mb-1.5 block font-mono text-xs font-semibold tracking-widest text-fg-muted uppercase;
+}
+@utility stitch {
+  /* Dashed "stitching" border — the brand's signature detail. */
+  @apply border-2 border-dashed border-accent/60;
+}
+@utility prose-field {
+  & p {
+    @apply mb-4 leading-relaxed text-fg-muted;
+  }
+  & h2 {
+    @apply mt-10 mb-3 font-display text-2xl font-extrabold tracking-wide text-fg uppercase;
+  }
+  & h3 {
+    @apply mt-6 mb-2 font-semibold text-fg;
+  }
+  & ul {
+    @apply mb-4 list-disc space-y-1 pl-5 text-fg-muted;
+  }
+  & a {
+    @apply text-accent underline underline-offset-4;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    transition-duration: 0.01ms !important;
+  }
+}

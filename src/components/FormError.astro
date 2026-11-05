@@ -1,0 +1,13 @@
+---
+interface Props {
+  id: string;
+  message?: string | undefined;
+}
+const { id, message } = Astro.props;
+---
+
+{message && (
+  <p id={id} class="mt-1.5 text-sm text-danger">
+    {message}
+  </p>
+)}

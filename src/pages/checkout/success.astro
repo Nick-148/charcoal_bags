@@ -1,0 +1,67 @@
+---
+export const prerender = false;
+
+import ClearCart from '@/components/cart/ClearCart';
+import { site } from '@/config/site';
+import BaseLayout from '@/layouts/BaseLayout.astro';
+import { formatShipDate } from '@/lib/availability';
+import { formatCentsExact } from '@/lib/money';
+import { getOrderBySessionId } from '@/server/db/queries';
+import { getDb } from '@/server/runtime';
+
+// Session ids are unguessable; we only show non-sensitive order facts (no address/email).
+const sessionId = Astro.url.searchParams.get('session_id') ?? '';
+const order = /^[A-Za-z0-9_-]{8,255}$/.test(sessionId) ? await getOrderBySessionId(getDb(), sessionId) : null;
+Astro.response.headers.set('Cache-Control', 'no-store');
+---
+
+<BaseLayout title="Order received" noindex>
+  {order && <ClearCart client:load />}
+  <section class="container-page max-w-2xl py-16 text-center">
+    <p class="eyebrow text-accent">Mission accepted</p>
+    <h1 class="heading-display mt-2 text-5xl">Order received</h1>
+    {order ? (
+      <div class="card stitch mt-8 p-6 text-left">
+        <p class="eyebrow text-fg-subtle">Order number</p>
+        <p class="font-mono text-2xl text-accent">{order.number}</p>
+        <p class="mt-4 text-fg-muted">
+          {order.bag_count} bag{order.bag_count === 1 ? '' : 's'} · {formatCentsExact(order.total_cents)}
+        </p>
+        {order.is_preorder === 1 ? (
+          <p class="mt-4 text-fg">
+            This is a <strong>Founder’s Pre-Order</strong>. It ships
+            {order.ships_by ? ` by ${formatShipDate(order.ships_by)}` : ' within 30 days'}. We will email
+            tracking as soon as it is on the move.
+          </p>
+        ) : (
+          <p class="mt-4 text-fg">
+            It ships within 2–3 business days. We will email tracking when it is on the move.
+          </p>
+        )}
+        {order.payment_status === 'pending' && (
+          <p class="mt-4 text-sm text-fg-subtle">
+            Payment confirmation can take a few seconds to land. Your receipt is on its way from Stripe.
+          </p>
+        )}
+      </div>
+    ) : (
+      <p class="mt-6 text-fg-muted">
+        Thanks. Your payment went through and a receipt is on its way to your inbox.
+      </p>
+    )}
+    <p class="mt-8 text-sm text-fg-muted">
+      Questions?{' '}
+      <a class="text-accent underline underline-offset-4" href="/contact">
+        Contact us
+      </a>{' '}
+      with your order number, or email
+      <a class="text-accent underline underline-offset-4" href={`mailto:${site.contact.supportEmail}`}>
+        {site.contact.supportEmail}
+      </a>
+      .
+    </p>
+    <a href="/" class="btn-secondary mt-8">
+      Back to base
+    </a>
+  </section>
+</BaseLayout>

@@ -1,0 +1,46 @@
+---
+// TEMPLATE — have the founder (and ideally a professional) review before launch. See docs/business/launch-checklist.md.
+import { site } from '@/config/site';
+import LegalLayout from '@/layouts/LegalLayout.astro';
+---
+
+<LegalLayout title="Terms of sale" updated="November 4, 2026">
+  <p>
+    These terms apply to purchases from {site.legalName}, based in {site.location}. By placing an order you
+    agree to them.
+  </p>
+  <h2>Products</h2>
+  <p>
+    Our bags contain activated bamboo charcoal for odor and moisture absorption. They are not a children’s
+    toy, not intended for ages under 14, and not a medical, air-purifying, or antibacterial device. Keep away
+    from small children and pets. Do not open, eat, or burn the contents. Colors of hand-made canvas vary
+    slightly between batches.
+  </p>
+  <h2>Prices and payment</h2>
+  <p>
+    Prices are in US dollars and are charged in full at checkout through Stripe, including Founder’s
+    Pre-Orders. Bulk pricing is applied automatically based on the number of bags in your cart. We may correct
+    obvious pricing errors and will refund you if we cancel an order for that reason.
+  </p>
+  <h2>Founder’s Pre-Orders</h2>
+  <p>
+    Pre-order items show a ship-by date before you buy and in your confirmation. If we cannot ship by that
+    date, we will notify you with a revised date and give you the choice to cancel for a full refund. If no
+    date is stated, we ship within 30 days. You can cancel a pre-order for a full refund at any time before it
+    ships.
+  </p>
+  <h2>Shipping, returns, and refunds</h2>
+  <p>
+    See our <a href="/legal/shipping-returns">shipping &amp; returns policy</a>.
+  </p>
+  <h2>Limitation of liability</h2>
+  <p>
+    To the fullest extent permitted by law, our liability for any claim relating to a product is limited to
+    the amount you paid for it.
+  </p>
+  <h2>Contact</h2>
+  <p>
+    Questions about these terms:{' '}
+    <a href={`mailto:${site.contact.supportEmail}`}>{site.contact.supportEmail}</a>.
+  </p>
+</LegalLayout>

@@ -1,0 +1,134 @@
+---
+export const prerender = false;
+
+import BagArt from '@/components/BagArt';
+import AddToCart from '@/components/cart/AddToCart';
+import Faq from '@/components/Faq.astro';
+import RechargeIndicator from '@/components/RechargeIndicator.astro';
+import { findProduct, productSpecs } from '@/config/catalog';
+import { bulkTiers, shipping } from '@/config/commerce';
+import { site } from '@/config/site';
+import BaseLayout from '@/layouts/BaseLayout.astro';
+import { formatCents } from '@/lib/money';
+import { loadCatalogAvailability } from '@/server/catalog-availability';
+import { getDb } from '@/server/runtime';
+
+const product = findProduct(Astro.params.slug ?? '');
+if (!product) return Astro.rewrite('/404');
+
+const entry = (await loadCatalogAvailability(getDb())).find((c) => c.product.slug === product.slug)!;
+const variants = product.variants.map((v) => ({
+  sku: v.sku,
+  name: v.name,
+  colorways: v.colorways,
+  availability: entry.availability.get(v.sku)!,
+}));
+const hero = product.variants[0]!;
+
+const schemaAvailability = {
+  in_stock: 'https://schema.org/InStock',
+  preorder: 'https://schema.org/PreOrder',
+  sold_out: 'https://schema.org/SoldOut',
+} as const;
+const structuredData = {
+  '@context': 'https://schema.org',
+  '@type': 'Product',
+  name: `${product.name} — ${site.name}`,
+  description: product.shortDescription,
+  brand: { '@type': 'Brand', name: site.name },
+  offers: {
+    '@type': 'AggregateOffer',
+    priceCurrency: 'USD',
+    lowPrice: (product.priceCents / 100).toFixed(2),
+    highPrice: (product.priceCents / 100).toFixed(2),
+    offerCount: product.variants.length,
+    availability: schemaAvailability[entry.status],
+  },
+};
+Astro.response.headers.set('Cache-Control', 'public, max-age=60');
+---
+
+<BaseLayout title={product.name} description={product.shortDescription} structuredData={structuredData}>
+  <section class="container-page py-10">
+    <nav aria-label="Breadcrumb" class="eyebrow text-fg-subtle">
+      <a href="/shop" class="hover:text-accent">
+        Shop
+      </a>{' '}
+      <span aria-hidden="true">/</span>
+      <span class="text-fg-muted">{product.name}</span>
+    </nav>
+
+    <div class="mt-6 grid gap-10 md:grid-cols-2">
+      <div class="card stitch flex aspect-square items-center justify-center bg-surface-sunken p-10">
+        <BagArt
+          colorways={hero.colorways}
+          className="h-full w-full"
+          title={`${product.name} in ${hero.name}`}
+        />
+      </div>
+
+      <div>
+        <h1 class="heading-display text-5xl">{product.name}</h1>
+        <p class="mt-2 font-mono text-2xl text-accent">{formatCents(product.priceCents)}</p>
+        <p class="mt-4 text-fg-muted">{product.shortDescription}</p>
+
+        <div class="mt-8">
+          <AddToCart
+            client:load
+            productName={product.name}
+            priceCents={product.priceCents}
+            bagsPerUnit={product.bagsPerUnit}
+            variants={variants}
+          />
+        </div>
+
+        <ul class="mt-6 space-y-1 text-sm text-fg-muted">
+          <li>
+            Flat {formatCents(shipping.flatRateCents)} US shipping · free over{' '}
+            {formatCents(shipping.freeThresholdCents)}
+          </li>
+          <li>
+            Bulk:{' '}
+            {[...bulkTiers]
+              .reverse()
+              .map((t) => `${t.minBags}+ bags at ${formatCents(t.perBagCents)}/bag`)
+              .join(' · ')}
+          </li>
+        </ul>
+      </div>
+    </div>
+  </section>
+
+  <section class="container-page grid gap-10 py-10 md:grid-cols-2">
+    <div>
+      <h2 class="heading-display text-3xl">How it works</h2>
+      <div class="mt-4 space-y-4 text-fg-muted">
+        {product.description.map((p) => (
+          <p class="leading-relaxed">{p}</p>
+        ))}
+      </div>
+      <div class="mt-6">
+        <RechargeIndicator />
+      </div>
+    </div>
+    <div>
+      <h2 class="heading-display text-3xl">Spec sheet</h2>
+      <dl class="mt-4 divide-y divide-line border-y border-line">
+        {productSpecs.map((spec) => (
+          <div class="grid grid-cols-[8rem_1fr] gap-4 py-3">
+            <dt class="eyebrow pt-0.5 text-fg-subtle">{spec.label}</dt>
+            <dd class="text-fg">{spec.value}</dd>
+          </div>
+        ))}
+      </dl>
+      <p class="mt-4 text-xs text-fg-subtle">{site.safetyNote}</p>
+    </div>
+  </section>
+
+  <section class="container-page py-10">
+    <h2 class="heading-display text-3xl">Questions</h2>
+    <div class="mt-4">
+      <Faq limit={5} />
+    </div>
+  </section>
+</BaseLayout>

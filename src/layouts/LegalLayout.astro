@@ -1,0 +1,20 @@
+---
+import BaseLayout from '@/layouts/BaseLayout.astro';
+
+interface Props {
+  title: string;
+  updated: string;
+}
+const { title, updated } = Astro.props;
+---
+
+<BaseLayout title={title}>
+  <article class="container-page max-w-3xl py-14">
+    <p class="eyebrow text-accent">Legal</p>
+    <h1 class="heading-display mt-2 text-5xl">{title}</h1>
+    <p class="mt-2 text-sm text-fg-subtle">Last updated {updated}</p>
+    <div class="prose-field mt-8">
+      <slot />
+    </div>
+  </article>
+</BaseLayout>

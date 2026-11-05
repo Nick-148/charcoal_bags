@@ -1,0 +1,128 @@
+---
+import BagArt from '@/components/BagArt';
+import Faq from '@/components/Faq.astro';
+import RechargeIndicator from '@/components/RechargeIndicator.astro';
+import { site } from '@/config/site';
+import { faq } from '@/content/faq';
+import BaseLayout from '@/layouts/BaseLayout.astro';
+
+const faqSchema = {
+  '@context': 'https://schema.org',
+  '@type': 'FAQPage',
+  mainEntity: faq.map((entry) => ({
+    '@type': 'Question',
+    name: entry.q,
+    acceptedAnswer: { '@type': 'Answer', text: entry.a.join(' ') },
+  })),
+};
+
+const theaters = [
+  {
+    title: 'Dorm rooms',
+    body: 'Four people, one room, zero windows that open. One on the desk, one in the hamper corner.',
+  },
+  {
+    title: 'Lockers',
+    body: 'The locker that has seen things. Hang a bag on the hook and stop holding your breath.',
+  },
+  {
+    title: 'Cars',
+    body: 'Post-practice gear in a hot car is a biohazard. Glovebox, door pocket, under the seat.',
+  },
+  {
+    title: 'Tailgates',
+    body: 'Cornhole is already at the tailgate. Ours just also handles the cleats in the trunk.',
+  },
+];
+---
+
+<BaseLayout
+  title="The Vibe"
+  description={`Why we merged cornhole culture with odor control, and everything you need to know about how ${site.shortName} bags work.`}
+  structuredData={faqSchema}
+>
+  <section class="border-b border-line">
+    <div class="container-page grid items-center gap-10 py-16 md:grid-cols-[1.3fr_1fr]">
+      <div>
+        <p class="eyebrow text-accent">Origin story</p>
+        <h1 class="heading-display mt-2 text-5xl sm:text-6xl">Odor control shouldn’t be boring</h1>
+        <div class="prose-field mt-6 max-w-2xl">
+          <p>
+            Charcoal bags work. Everyone who has tried one knows it. But they come as limp mesh rectangles
+            that look like hardware-store filler, so they get shoved under a seat and forgotten.
+          </p>
+          <p>
+            We wanted the same perfume-free activated bamboo charcoal in something you would actually leave
+            out. Cornhole was right there: a square canvas bag, built to be thrown around, already living at
+            every tailgate, backyard, and dorm common room. Shrink it to 4×4, stitch it tough, fill it with
+            charcoal, and you have a desk toy that pulls double duty in your sneakers.
+          </p>
+          <p>
+            Every batch is hand-stitched in small runs in {site.location.split(',')[0]}. Founder’s Pre-Orders
+            fund each batch, so when you order early you are literally paying for the canvas your bag is cut
+            from.
+          </p>
+        </div>
+      </div>
+      <BagArt colorways={['kraft', 'blackout']} className="mx-auto w-full max-w-sm" />
+    </div>
+  </section>
+
+  <section class="container-page py-16" aria-labelledby="theaters">
+    <p class="eyebrow text-accent">Theaters of operation</p>
+    <h2 id="theaters" class="heading-display mt-2 text-4xl">
+      Built for where the funk lives
+    </h2>
+    <div class="mt-8 grid gap-6 sm:grid-cols-2 lg:grid-cols-4">
+      {theaters.map((t) => (
+        <div class="card p-6">
+          <h3 class="heading-display text-2xl">{t.title}</h3>
+          <p class="mt-2 text-fg-muted">{t.body}</p>
+        </div>
+      ))}
+    </div>
+  </section>
+
+  <section class="border-y border-line bg-surface-sunken py-16" aria-labelledby="science">
+    <div class="container-page grid gap-10 md:grid-cols-2">
+      <div>
+        <p class="eyebrow text-accent">The science, briefly</p>
+        <h2 id="science" class="heading-display mt-2 text-4xl">
+          Adsorption, not perfume
+        </h2>
+        <div class="prose-field mt-6">
+          <p>
+            Activated charcoal is charcoal that has been processed to open up a huge network of microscopic
+            pores. Odor molecules and water vapor drift into those pores and stick to the surface. That’s
+            adsorption, with a “d.”
+          </p>
+          <p>
+            Nothing is sprayed and nothing is masked. The smell is gone, not drowned. Sunlight helps the
+            charcoal shed what it has collected, which is why a monthly sunbath keeps it working for up to two
+            years.
+          </p>
+        </div>
+      </div>
+      <div class="space-y-4">
+        <RechargeIndicator />
+        <div class="card p-5">
+          <p class="eyebrow text-fg-subtle">End of service</p>
+          <p class="mt-1 text-fg">
+            After ~2 years, cut it open and work the charcoal into garden soil. The canvas shell can keep
+            living as a desk toss.
+          </p>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <section id="faq" class="container-page scroll-mt-20 py-16" aria-labelledby="faq-heading">
+    <p class="eyebrow text-accent">Debrief</p>
+    <h2 id="faq-heading" class="heading-display mt-2 text-4xl">
+      FAQ
+    </h2>
+    <div class="mt-6">
+      <Faq />
+    </div>
+  </section>
+</BaseLayout>

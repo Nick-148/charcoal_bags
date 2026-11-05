@@ -1,0 +1,270 @@
+---
+export const prerender = false;
+
+import StatusPill from '@/components/admin/StatusPill.astro';
+import FormError from '@/components/FormError.astro';
+import AdminLayout from '@/layouts/AdminLayout.astro';
+import { formatShipDate } from '@/lib/availability';
+import { formatCentsExact } from '@/lib/money';
+import { FULFILLMENT_STATUSES, getAuditTrail, getOrderByNumber, getOrderItems } from '@/server/db/queries';
+import { seeOther } from '@/server/http';
+import { getDb, orderDeps } from '@/server/runtime';
+import { updateFulfillment, type AdminResult } from '@/server/services/admin';
+import { refundOrder } from '@/server/services/orders';
+import { formStrings } from '@/server/validation';
+
+const db = getDb();
+const number = Astro.params.number ?? '';
+let order = /^[A-Z0-9]{1,8}-[A-Z0-9]{4,12}$/.test(number) ? await getOrderByNumber(db, number) : null;
+if (!order) return Astro.rewrite('/404');
+
+const actor = Astro.locals.admin!.email;
+let result: AdminResult | null = null;
+/** Submitted fulfillment values, echoed back when validation fails so the admin's edits aren't lost. */
+let submitted: Record<string, string> | null = null;
+
+if (Astro.request.method === 'POST') {
+  const form = await Astro.request.formData();
+  const action = form.get('_action');
+  if (action === 'fulfillment') {
+    submitted = formStrings(form, ['fulfillmentStatus', 'carrier', 'trackingNumber', 'adminNotes']);
+    result = await updateFulfillment(db, order.id, submitted, actor);
+  } else if (action === 'refund') {
+    if (form.get('confirm') !== order.number) {
+      result = {
+        ok: false,
+        error: 'Type the order number to confirm the refund.',
+        fieldErrors: { confirm: 'Must match the order number.' },
+      };
+    } else {
+      const deps = orderDeps(Astro.request);
+      const refund = deps
+        ? await refundOrder(deps, order.id, { restock: form.get('restock') === 'on', actor })
+        : ({ ok: false, error: 'Payments are not configured.' } as const);
+      result = refund.ok ? { ok: true, message: `Order ${order.number} refunded.` } : refund;
+    }
+  } else {
+    result = { ok: false, error: 'Unknown action.' };
+  }
+  if (result.ok) return seeOther(`/admin/orders/${order.number}?saved=1`);
+  Astro.response.status = 400;
+  order = (await getOrderByNumber(db, number))!;
+}
+
+const [items, audit] = await Promise.all([getOrderItems(db, order.id), getAuditTrail(db, 'order', order.id)]);
+const flash =
+  result && !result.ok
+    ? { kind: 'error' as const, message: result.error }
+    : Astro.url.searchParams.get('saved') === '1'
+      ? { kind: 'ok' as const, message: 'Saved.' }
+      : null;
+const errors = result && !result.ok ? (result.fieldErrors ?? {}) : {};
+const fulfillmentForm = {
+  status: submitted?.['fulfillmentStatus'] ?? order.fulfillment_status,
+  carrier: submitted?.['carrier'] ?? order.carrier ?? 'USPS',
+  trackingNumber: submitted?.['trackingNumber'] ?? order.tracking_number ?? '',
+  adminNotes: submitted?.['adminNotes'] ?? order.admin_notes ?? '',
+};
+const refundable =
+  (order.payment_status === 'paid' || order.payment_status === 'partially_refunded') &&
+  !!order.payment_intent_id;
+const address = [
+  order.ship_name,
+  order.ship_line1,
+  order.ship_line2,
+  [order.ship_city, order.ship_state, order.ship_postal_code].filter(Boolean).join(' '),
+  order.ship_country,
+].filter(Boolean);
+const dateFmt = new Intl.DateTimeFormat('en-US', {
+  dateStyle: 'medium',
+  timeStyle: 'short',
+  timeZone: 'America/New_York',
+});
+---
+
+<AdminLayout title={`Order ${order.number}`} flash={flash}>
+  <div class="flex flex-wrap items-center gap-2">
+    <StatusPill status={order.payment_status} />
+    <StatusPill status={order.fulfillment_status} />
+    {order.is_preorder === 1 && (
+      <span class="text-sm text-accent">
+        Pre-order · ships by {order.ships_by ? formatShipDate(order.ships_by) : '30 days'}
+      </span>
+    )}
+    {order.needs_review === 1 && (
+      <span class="text-sm text-danger">⚠ Needs review: verify stock and amount before shipping</span>
+    )}
+  </div>
+
+  <div class="mt-6 grid gap-6 lg:grid-cols-[1.4fr_1fr]">
+    <div class="space-y-6">
+      <section class="card p-5">
+        <h2 class="eyebrow text-fg-subtle">Items</h2>
+        <ul class="mt-3 divide-y divide-line text-sm">
+          {items.map((i) => (
+            <li class="flex justify-between gap-3 py-2">
+              <span>
+                {i.quantity} × {i.product_name} — {i.variant_name}{' '}
+                <span class="font-mono text-xs text-fg-subtle">{i.sku}</span>
+                {i.is_preorder === 1 && <span class="ml-1 text-xs text-accent">PO</span>}
+              </span>
+              <span class="font-mono">{formatCentsExact(i.unit_cents * i.quantity)}</span>
+            </li>
+          ))}
+        </ul>
+        <dl class="mt-3 space-y-1 border-t border-line pt-3 text-sm">
+          <div class="flex justify-between">
+            <dt class="text-fg-muted">Subtotal</dt>
+            <dd class="font-mono">{formatCentsExact(order.subtotal_cents)}</dd>
+          </div>
+          <div class="flex justify-between">
+            <dt class="text-fg-muted">Shipping</dt>
+            <dd class="font-mono">{formatCentsExact(order.shipping_cents)}</dd>
+          </div>
+          <div class="flex justify-between font-semibold">
+            <dt>Total</dt>
+            <dd class="font-mono">{formatCentsExact(order.total_cents)}</dd>
+          </div>
+          {order.amount_paid_cents !== null && (
+            <div class="flex justify-between">
+              <dt class="text-fg-muted">Paid</dt>
+              <dd class="font-mono">{formatCentsExact(order.amount_paid_cents)}</dd>
+            </div>
+          )}
+          {order.amount_refunded_cents > 0 && (
+            <div class="flex justify-between text-danger">
+              <dt>Refunded</dt>
+              <dd class="font-mono">{formatCentsExact(order.amount_refunded_cents)}</dd>
+            </div>
+          )}
+        </dl>
+      </section>
+
+      <section class="card p-5">
+        <h2 class="eyebrow text-fg-subtle">Fulfillment</h2>
+        <form method="post" class="mt-3 grid gap-4 sm:grid-cols-2">
+          <input type="hidden" name="_action" value="fulfillment" />
+          <div>
+            <label class="field-label" for="fulfillmentStatus">
+              Status
+            </label>
+            <select class="field" id="fulfillmentStatus" name="fulfillmentStatus">
+              {FULFILLMENT_STATUSES.map((s) => (
+                <option value={s} selected={s === fulfillmentForm.status}>
+                  {s.replaceAll('_', ' ')}
+                </option>
+              ))}
+            </select>
+          </div>
+          <div>
+            <label class="field-label" for="carrier">
+              Carrier
+            </label>
+            <input class="field" id="carrier" name="carrier" maxlength="40" value={fulfillmentForm.carrier} />
+          </div>
+          <div class="sm:col-span-2">
+            <label class="field-label" for="trackingNumber">
+              Tracking number
+            </label>
+            <input
+              class="field font-mono"
+              id="trackingNumber"
+              name="trackingNumber"
+              maxlength="64"
+              value={fulfillmentForm.trackingNumber}
+            />
+            <FormError id="trackingNumber-error" message={errors.trackingNumber} />
+          </div>
+          <div class="sm:col-span-2">
+            <label class="field-label" for="adminNotes">
+              Internal notes
+            </label>
+            <textarea
+              class="field min-h-20"
+              id="adminNotes"
+              name="adminNotes"
+              maxlength="2000"
+            >{fulfillmentForm.adminNotes}</textarea>
+          </div>
+          <button class="btn-primary sm:col-span-2 sm:justify-self-start">Save fulfillment</button>
+        </form>
+      </section>
+
+      {refundable && (
+        <section class="card border-danger/40 p-5">
+          <h2 class="eyebrow text-danger">Refund</h2>
+          <p class="mt-2 text-sm text-fg-muted">
+            Refunds the full remaining payment through Stripe and cancels fulfillment (unless already
+            shipped). This cannot be undone.
+          </p>
+          <form method="post" class="mt-3 space-y-3">
+            <input type="hidden" name="_action" value="refund" />
+            <label class="flex items-center gap-2 text-sm">
+              <input
+                type="checkbox"
+                name="restock"
+                checked={order.fulfillment_status !== 'shipped' && order.fulfillment_status !== 'delivered'}
+              />
+              Return reserved units to inventory
+            </label>
+            <div>
+              <label class="field-label" for="confirm">
+                Type {order.number} to confirm
+              </label>
+              <input class="field font-mono" id="confirm" name="confirm" autocomplete="off" />
+              <FormError id="confirm-error" message={errors.confirm} />
+            </div>
+            <button class="btn border border-danger text-danger hover:bg-danger/10">Refund order</button>
+          </form>
+        </section>
+      )}
+    </div>
+
+    <div class="space-y-6">
+      <section class="card p-5 text-sm">
+        <h2 class="eyebrow text-fg-subtle">Customer</h2>
+        <p class="mt-3">{order.customer_name ?? '—'}</p>
+        {order.customer_email && (
+          <p>
+            <a
+              class="text-accent underline"
+              href={`mailto:${order.customer_email}?subject=${encodeURIComponent(`Your order ${order.number}`)}`}
+            >
+              {order.customer_email}
+            </a>
+          </p>
+        )}
+        {order.customer_phone && <p class="text-fg-muted">{order.customer_phone}</p>}
+        <h3 class="eyebrow mt-4 text-fg-subtle">Ship to</h3>
+        {address.length > 0 ? (
+          <address class="mt-1 not-italic">
+            {address.map((line) => (
+              <span class="block">{line}</span>
+            ))}
+          </address>
+        ) : (
+          <p class="text-fg-subtle">Not collected yet</p>
+        )}
+      </section>
+      <section class="card p-5 text-sm">
+        <h2 class="eyebrow text-fg-subtle">Timeline</h2>
+        <ul class="mt-3 space-y-1 text-fg-muted">
+          <li>Placed {dateFmt.format(new Date(order.created_at))}</li>
+          {order.paid_at && <li>Paid {dateFmt.format(new Date(order.paid_at))}</li>}
+          {order.shipped_at && <li>Shipped {dateFmt.format(new Date(order.shipped_at))}</li>}
+          {audit.map((a) => (
+            <li>
+              <span class="text-fg">{a.action}</span> by {a.actor} · {dateFmt.format(new Date(a.created_at))}
+            </li>
+          ))}
+        </ul>
+        {order.payment_intent_id && (
+          <p class="mt-3 font-mono text-xs break-all text-fg-subtle">{order.payment_intent_id}</p>
+        )}
+      </section>
+    </div>
+  </div>
+  <a href="/admin/orders" class="mt-6 inline-block text-sm text-accent underline">
+    ← All orders
+  </a>
+</AdminLayout>

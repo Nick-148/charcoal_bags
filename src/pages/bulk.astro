@@ -1,0 +1,244 @@
+---
+export const prerender = false;
+
+import BagArt from '@/components/BagArt';
+import FormError from '@/components/FormError.astro';
+import Turnstile from '@/components/Turnstile.astro';
+import { BAG_LIST_PRICE_CENTS } from '@/config/catalog';
+import { bulkTiers, limits } from '@/config/commerce';
+import { site } from '@/config/site';
+import BaseLayout from '@/layouts/BaseLayout.astro';
+import { formatCents } from '@/lib/money';
+import { seeOther } from '@/server/http';
+import { getClientIp, inquiryDeps, turnstileSiteKey } from '@/server/runtime';
+import { HONEYPOT_FIELD, submitInquiry } from '@/server/services/inquiries';
+
+const deps = inquiryDeps(Astro.request);
+let values: Record<string, string> = {
+  name: '',
+  email: '',
+  organization: '',
+  quantity: '',
+  neededBy: '',
+  customization: '',
+  message: '',
+};
+let errors: Record<string, string> = {};
+let formError: string | undefined;
+
+if (Astro.request.method === 'POST') {
+  if (!deps) {
+    Astro.response.status = 503;
+    formError = 'The quote form is temporarily offline. Email us instead.';
+  } else {
+    const result = await submitInquiry(
+      deps,
+      'bulk',
+      await Astro.request.formData(),
+      getClientIp(Astro.request),
+    );
+    if (result.ok) return seeOther('/bulk?sent=1#quote');
+    Astro.response.status = result.status;
+    values = result.values;
+    errors = result.fieldErrors;
+    formError = result.formError ?? 'Fix the highlighted fields and send again.';
+  }
+}
+
+const sent = Astro.url.searchParams.get('sent') === '1';
+const siteKey = turnstileSiteKey();
+const tiers = [
+  { minBags: 1, perBagCents: BAG_LIST_PRICE_CENTS, label: 'Standard' },
+  ...[...bulkTiers].reverse(),
+];
+Astro.response.headers.set('Cache-Control', 'no-store');
+
+function invalid(field: string): { 'aria-invalid'?: 'true'; 'aria-describedby'?: string } {
+  return errors[field] ? { 'aria-invalid': 'true', 'aria-describedby': `${field}-error` } : {};
+}
+---
+
+<BaseLayout
+  title="Bulk & team orders"
+  description="Team, club, and event pricing on mini cornhole charcoal bags. Automatic bulk discounts plus custom colors and logos."
+>
+  <section class="container-page py-14">
+    <p class="eyebrow text-accent">Squad logistics</p>
+    <h1 class="heading-display mt-2 text-5xl">Bulk &amp; team orders</h1>
+    <p class="mt-4 max-w-2xl text-fg-muted">
+      Outfitting a locker room, a club, a dorm floor, or a tailgate crew? Mix any stock colorways and bulk
+      pricing applies automatically in the cart. A Tailgate Pair counts as two bags.
+    </p>
+
+    <div class="mt-10 grid gap-4 sm:grid-cols-3">
+      {tiers.map((tier, i) => (
+        <div class:list={['card p-6', i === tiers.length - 1 && 'border-accent']}>
+          <p class="eyebrow text-fg-subtle">{tier.label}</p>
+          <p class="heading-display mt-2 text-4xl">
+            {formatCents(tier.perBagCents)}
+            <span class="font-sans text-base font-normal text-fg-muted normal-case">/bag</span>
+          </p>
+          <p class="mt-2 text-fg-muted">{tier.minBags === 1 ? '1–9 bags' : `${tier.minBags}+ bags`}</p>
+        </div>
+      ))}
+    </div>
+    <p class="mt-4 text-sm text-fg-subtle">
+      Online orders go up to {limits.maxBagsPerOrder} bags. Beyond that, or for custom colors and logos,
+      request a quote below.
+    </p>
+    <a href="/shop" class="btn-primary mt-6">
+      Shop stock colorways
+    </a>
+  </section>
+
+  <section id="quote" class="border-t border-line bg-surface-sunken py-14">
+    <div class="container-page grid gap-12 md:grid-cols-[1fr_1.4fr]">
+      <div>
+        <h2 class="heading-display text-4xl">Custom quote</h2>
+        <p class="mt-4 text-fg-muted">
+          Team colors, a club logo, event giveaways, or retail wholesale. Tell us what you need and when, and
+          we will reply with pricing and a production timeline {site.contact.responseTime}.
+        </p>
+        <BagArt colorways={['olive', 'kraft']} className="mt-8 hidden w-64 md:block" />
+      </div>
+      <div>
+        {sent ? (
+          <div class="card stitch p-8" role="status">
+            <p class="heading-display text-3xl">Request received</p>
+            <p class="mt-2 text-fg-muted">We will reply with a quote {site.contact.responseTime}.</p>
+          </div>
+        ) : (
+          <form method="post" action="/bulk#quote" class="card space-y-5 p-6" novalidate>
+            {formError && (
+              <p role="alert" class="rounded-sm border border-danger/60 p-3 text-sm text-danger">
+                {formError}
+              </p>
+            )}
+            <div class="grid gap-5 sm:grid-cols-2">
+              <div>
+                <label class="field-label" for="name">
+                  Name
+                </label>
+                <input
+                  class="field"
+                  id="name"
+                  name="name"
+                  autocomplete="name"
+                  required
+                  maxlength="100"
+                  value={values.name}
+                  {...invalid('name')}
+                />
+                <FormError id="name-error" message={errors.name} />
+              </div>
+              <div>
+                <label class="field-label" for="email">
+                  Email
+                </label>
+                <input
+                  class="field"
+                  id="email"
+                  name="email"
+                  type="email"
+                  autocomplete="email"
+                  required
+                  maxlength="254"
+                  value={values.email}
+                  {...invalid('email')}
+                />
+                <FormError id="email-error" message={errors.email} />
+              </div>
+            </div>
+            <div>
+              <label class="field-label" for="organization">
+                Team / club / company
+              </label>
+              <input
+                class="field"
+                id="organization"
+                name="organization"
+                autocomplete="organization"
+                required
+                maxlength="150"
+                value={values.organization}
+                {...invalid('organization')}
+              />
+              <FormError id="organization-error" message={errors.organization} />
+            </div>
+            <div class="grid gap-5 sm:grid-cols-2">
+              <div>
+                <label class="field-label" for="quantity">
+                  How many bags?
+                </label>
+                <input
+                  class="field"
+                  id="quantity"
+                  name="quantity"
+                  type="number"
+                  inputmode="numeric"
+                  min="10"
+                  max="10000"
+                  required
+                  value={values.quantity}
+                  {...invalid('quantity')}
+                />
+                <FormError id="quantity-error" message={errors.quantity} />
+              </div>
+              <div>
+                <label class="field-label" for="neededBy">
+                  Needed by (optional)
+                </label>
+                <input
+                  class="field"
+                  id="neededBy"
+                  name="neededBy"
+                  type="date"
+                  value={values.neededBy}
+                  {...invalid('neededBy')}
+                />
+                <FormError id="neededBy-error" message={errors.neededBy} />
+              </div>
+            </div>
+            <div>
+              <label class="field-label" for="customization">
+                Colors / logo / customization (optional)
+              </label>
+              <input
+                class="field"
+                id="customization"
+                name="customization"
+                maxlength="1000"
+                placeholder="e.g. navy + gold, one-color logo on the front"
+                value={values.customization}
+                {...invalid('customization')}
+              />
+              <FormError id="customization-error" message={errors.customization} />
+            </div>
+            <div>
+              <label class="field-label" for="message">
+                Details
+              </label>
+              <textarea
+                class="field min-h-32"
+                id="message"
+                name="message"
+                required
+                maxlength="4000"
+                {...invalid('message')}
+              >{values.message}</textarea>
+              <FormError id="message-error" message={errors.message} />
+            </div>
+            <div class="hidden" aria-hidden="true">
+              <label for={HONEYPOT_FIELD}>Leave this empty</label>
+              <input id={HONEYPOT_FIELD} name={HONEYPOT_FIELD} tabindex="-1" autocomplete="off" />
+            </div>
+            <Turnstile siteKey={siteKey} action="bulk_quote" />
+            <button type="submit" class="btn-primary" disabled={!deps}>
+              Request quote
+            </button>
+          </form>
+        )}
+      </div>
+    </div>
+  </section>
+</BaseLayout>
