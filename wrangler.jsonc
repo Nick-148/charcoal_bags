@@ -45,8 +45,8 @@
     "TURNSTILE_SITE_KEY": "0x4AAAAAAF069J9-Y6zYpewL",
     "ADMIN_AUTH_MODE": "access",
     // Optional comma-separated allowlist checked after Access (defense in depth).
-    "ADMIN_EMAILS": "",
-    "ACCESS_TEAM_DOMAIN": "",
-    "ACCESS_AUD": "",
+    "ADMIN_EMAILS": "nicknickp148@gmail.com",
+    "ACCESS_TEAM_DOMAIN": "https://purple-wood-edc7.cloudflareaccess.com",
+    "ACCESS_AUD": "e0a1a676922f69ca636f7f41002ea23aebf318777afaf60c3d235e0dc61f972a",
   },
 }

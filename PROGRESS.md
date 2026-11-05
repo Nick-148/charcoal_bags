@@ -27,7 +27,14 @@ Newest first. One entry per working session: what changed, what was verified, wh
   Turnstile check (test keys) on workerd. Failed checks now log a reason (`captcha.failed`, no token/secret)
   — that log is how this was diagnosed. Verified live: contact message stored after the deploy.
 
-**Next:** confirm alert emails arrive, then Phase 6 (Access for `/admin`).
+- Second test order `BB-BDTAHA` paid; order and contact alert emails confirmed arriving. ✅
+- Phase 6: Access application protects `/admin` and `/admin/*` on the workers.dev hostname (path-scoped
+  apps work there, so no custom domain was needed). Team domain was auto-assigned; read from the login
+  redirect. `ACCESS_TEAM_DOMAIN`, `ACCESS_AUD`, `ADMIN_EMAILS` deployed. Verified from outside: `/admin`
+  redirects to Access login; on the version preview URL (which bypasses Access) the Worker returns 401
+  without a token and 403 with a forged one; `/shop` stays public. Setup guide updated with these findings.
+
+**Next:** founder logs in to `/admin` once to confirm, then Phase 7 (replace placeholders).
 
 ## 2026-11-04 — Milestone 1 build
 

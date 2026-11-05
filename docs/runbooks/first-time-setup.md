@@ -280,8 +280,9 @@ that login itself.
 ### 6.1 Turn on Zero Trust (one time)
 
 1. In the Cloudflare dashboard left sidebar, open **Zero Trust**.
-2. **Team name:** pick something like `blackbag-ops`. It becomes `https://<team>.cloudflareaccess.com`.
-   Write the full address in your notes.
+2. **Team name:** if asked, pick something like `blackbag-ops`. It becomes
+   `https://<team>.cloudflareaccess.com`. Cloudflare may skip this step and assign a random name (like
+   `purple-wood-edc7`); that's fine. Step 6.3 shows how to find it.
 3. **Plan:** choose **Free** (up to 50 users).
 4. Cloudflare asks for a payment card even on the free plan. **You won't be charged.** Enter it yourself
    and finish.
@@ -293,11 +294,12 @@ that login itself.
 2. **Application name:** `Store admin`. **Session duration:** 24 hours.
 3. Under **Public hostname / Destinations**, add **two** entries. Both are needed: one for the
    `/admin` page itself and one for everything under it.
-   - Domain `charcoal-bags.<your-subdomain>.workers.dev`, Path `admin`
-   - Domain `charcoal-bags.<your-subdomain>.workers.dev`, Path `admin/*`
+   The form has three boxes per row: subdomain, a Domain dropdown, and path.
+   - Subdomain `charcoal-bags`, Domain `<your-subdomain>.workers.dev`, Path `admin`
+   - Subdomain `charcoal-bags`, Domain `<your-subdomain>.workers.dev`, Path `admin/*`
 
-   If there's a separate "subdomain" box and the form won't accept the workers.dev address, see the
-   note at the end of this phase.
+   Don't choose a "Workers" destination type: that locks the whole store. If the Domain dropdown
+   doesn't list your workers.dev address, see the note at the end of this phase.
 
 4. **Policies** → **Add a policy**:
    - Name: `Founder only` · Action: **Allow**
@@ -310,6 +312,9 @@ that login itself.
 
 1. Open the `Store admin` application → its overview / basic information → copy the
    **Application Audience (AUD) Tag** (a long string of letters and numbers).
+   - Can't find the team domain? Open `https://…workers.dev/admin`: it now redirects to
+     `https://<team>.cloudflareaccess.com/cdn-cgi/access/login/…`. The part before `/cdn-cgi` is the team
+     domain (Claude can read it for you).
 2. Put these in `wrangler.jsonc → "vars"` (or send them to Claude; neither is secret):
 
    | Setting              | Value                                        |
