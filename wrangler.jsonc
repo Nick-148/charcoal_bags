@@ -36,13 +36,13 @@
   // are set with `wrangler secret put` and never committed.
   "vars": {
     "ENVIRONMENT": "production",
-    "PUBLIC_SITE_URL": "",
+    "PUBLIC_SITE_URL": "https://charcoal-bags.nicknickp148.workers.dev",
     "PAYMENTS_PROVIDER": "stripe",
     "EMAIL_PROVIDER": "resend",
     "EMAIL_FROM": "Black Bag Odor Co. <onboarding@resend.dev>",
-    "ALERT_EMAIL_TO": "",
+    "ALERT_EMAIL_TO": "nicknickp148@gmail.com",
     "CAPTCHA_PROVIDER": "turnstile",
-    "TURNSTILE_SITE_KEY": "",
+    "TURNSTILE_SITE_KEY": "0x4AAAAAAF069J9-Y6zYpewL",
     "ADMIN_AUTH_MODE": "access",
     // Optional comma-separated allowlist checked after Access (defense in depth).
     "ADMIN_EMAILS": "",

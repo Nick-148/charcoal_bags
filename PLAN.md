@@ -26,17 +26,17 @@ gated on the account setup in **Blockers** below, then the steps in `docs/runboo
 
 Each blocker is stubbed behind an interface so development continues (ADR 0015).
 
-| #   | Blocker                                                                          | Unblocked by | Stub in place                               | Since      |
-| --- | -------------------------------------------------------------------------------- | ------------ | ------------------------------------------- | ---------- |
-| B1  | Cloudflare: D1 created ✅ — apply remote migrations, connect Workers Builds      | Founder      | Local D1 via wrangler                       | 2026-11-04 |
-| B2  | Stripe account + test/live keys + webhook endpoint secret                        | Founder      | `PAYMENTS_PROVIDER=fake`                    | 2026-11-04 |
-| B3  | Resend account + API key (alerts); later a verified domain                       | Founder      | `EMAIL_PROVIDER=console`                    | 2026-11-04 |
-| B4  | Turnstile widget (site + secret key) for the workers.dev hostname                | Founder      | Cloudflare test keys                        | 2026-11-04 |
-| B5  | Cloudflare Access app for `/admin` (team domain + AUD); may need a custom domain | Founder      | localhost `dev-bypass`                      | 2026-11-04 |
-| B6  | Real contact email, social handles, ship-by date for Batch 01                    | Founder      | Placeholders in `src/config/site.ts` + seed | 2026-11-04 |
-| B7  | Final brand name + USPTO trademark search                                        | Founder      | Provisional "Black Bag Odor Co."            | 2026-11-04 |
-| B8  | Product photos (and an OG/social share image)                                    | Founder      | SVG `BagArt` illustrations                  | 2026-11-04 |
-| B9  | Review of legal page templates (privacy, terms, shipping/returns)                | Founder      | Template copy in `src/pages/legal/`         | 2026-11-04 |
+| #   | Blocker                                                                           | Unblocked by | Stub in place                               | Since      |
+| --- | --------------------------------------------------------------------------------- | ------------ | ------------------------------------------- | ---------- |
+| B1  | Cloudflare: D1 created and migrated, Worker deployed ✅ — Workers Builds optional | Founder      | Local D1 via wrangler                       | 2026-11-04 |
+| B2  | Stripe: sandbox keys + webhook set ✅ — activation, live keys, live webhook       | Founder      | `PAYMENTS_PROVIDER=fake`                    | 2026-11-04 |
+| B3  | Resend: API key set ✅ — verified domain later (needs custom domain)              | Founder      | `EMAIL_PROVIDER=console`                    | 2026-11-04 |
+| B4  | Turnstile widget for the workers.dev hostname ✅ (done 2026-11-05)                | Founder      | Cloudflare test keys                        | 2026-11-04 |
+| B5  | Cloudflare Access app for `/admin` (team domain + AUD); may need a custom domain  | Founder      | localhost `dev-bypass`                      | 2026-11-04 |
+| B6  | Real contact email, social handles, ship-by date for Batch 01                     | Founder      | Placeholders in `src/config/site.ts` + seed | 2026-11-04 |
+| B7  | Final brand name + USPTO trademark search                                         | Founder      | Provisional "Black Bag Odor Co."            | 2026-11-04 |
+| B8  | Product photos (and an OG/social share image)                                     | Founder      | SVG `BagArt` illustrations                  | 2026-11-04 |
+| B9  | Review of legal page templates (privacy, terms, shipping/returns)                 | Founder      | Template copy in `src/pages/legal/`         | 2026-11-04 |
 
 ## Roadmap
 
