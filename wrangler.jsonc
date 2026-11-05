@@ -17,7 +17,8 @@
       "binding": "DB",
       "database_name": "charcoal-bags",
       "migrations_dir": "migrations",
-      // database_id is filled in after `wrangler d1 create charcoal-bags` (see docs/runbooks/deploy.md).
+      // Keep the binding name "DB": src/server/runtime.ts and src/worker.ts read env.DB.
+      "database_id": "160c7ad4-e202-411e-9c93-e6e806f69c9e",
     },
   ],
   "ratelimits": [

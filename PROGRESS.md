@@ -2,6 +2,14 @@
 
 Newest first. One entry per working session: what changed, what was verified, what's next.
 
+## 2026-11-05 — Repo published, production D1 created
+
+- Pushed `main` to https://github.com/Nick-148/charcoal_bags; first CI run green (verify + 14 E2E).
+- Founder created the production D1 database; its `database_id` is now in `wrangler.jsonc` (binding
+  stays `DB`). `npm run verify` green.
+
+**Next:** `npm run db:migrate:remote`, then continue `docs/runbooks/deploy.md` from step 2.
+
 ## 2026-11-04 — Milestone 1 build
 
 **Decisions (with founder):** Brand = Black Bag Odor Co. (provisional). Shipping flat $4 / free ≥ $30, US only.

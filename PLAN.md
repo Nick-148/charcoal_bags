@@ -28,7 +28,7 @@ Each blocker is stubbed behind an interface so development continues (ADR 0015).
 
 | #   | Blocker                                                                          | Unblocked by | Stub in place                               | Since      |
 | --- | -------------------------------------------------------------------------------- | ------------ | ------------------------------------------- | ---------- |
-| B1  | Cloudflare account: create D1 `charcoal-bags`, connect Workers Builds            | Founder      | Local D1 via wrangler                       | 2026-11-04 |
+| B1  | Cloudflare: D1 created ✅ — apply remote migrations, connect Workers Builds      | Founder      | Local D1 via wrangler                       | 2026-11-04 |
 | B2  | Stripe account + test/live keys + webhook endpoint secret                        | Founder      | `PAYMENTS_PROVIDER=fake`                    | 2026-11-04 |
 | B3  | Resend account + API key (alerts); later a verified domain                       | Founder      | `EMAIL_PROVIDER=console`                    | 2026-11-04 |
 | B4  | Turnstile widget (site + secret key) for the workers.dev hostname                | Founder      | Cloudflare test keys                        | 2026-11-04 |
