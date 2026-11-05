@@ -68,11 +68,16 @@ export class MemoryEmailSender implements EmailSender {
 
 export class ResendEmailSender implements EmailSender {
   readonly name = 'resend' as const;
+  private readonly fetchImpl: typeof fetch;
+
   constructor(
     private readonly apiKey: string,
     private readonly from: string,
-    private readonly fetchImpl: typeof fetch = fetch,
-  ) {}
+    fetchImpl: typeof fetch = fetch,
+  ) {
+    // Never call fetch as `this.fetchImpl(...)`: the Workers runtime throws "Illegal invocation".
+    this.fetchImpl = (input, init) => fetchImpl(input, init);
+  }
 
   async send(message: EmailMessage): Promise<void> {
     const headers: Record<string, string> = {

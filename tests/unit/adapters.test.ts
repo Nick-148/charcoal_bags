@@ -4,7 +4,42 @@ import { csvCell, toCsv } from '@/server/csv';
 import { EmailDeliveryError, ResendEmailSender } from '@/server/email';
 import { esc, newInquiryAlert, newOrderAlert } from '@/server/email/templates';
 import { newOrderNumber } from '@/server/ids';
+import { createMemoryLogger } from '@/server/logger';
 import { decodeFakeSessionId, encodeFakeSessionId, FakePaymentGateway } from '@/server/payments/fake';
+
+/**
+ * Mimics the Workers runtime: its global fetch throws "Illegal invocation" when called as a method of
+ * another object (e.g. `this.fetchImpl(...)`). Plain vi.fn() mocks don't care, which hid this in production.
+ */
+function workersLikeFetch(respond: () => Response): typeof fetch {
+  return function (this: unknown) {
+    if (this !== undefined && this !== globalThis) {
+      throw new TypeError('Illegal invocation: function called with incorrect `this` reference.');
+    }
+    return Promise.resolve(respond());
+  } as unknown as typeof fetch;
+}
+
+describe('outbound adapters call fetch the way the Workers runtime requires', () => {
+  it('TurnstileVerifier', async () => {
+    const verifier = new TurnstileVerifier(
+      's',
+      workersLikeFetch(() => Response.json({ success: true })),
+    );
+    expect(await verifier.verify('token', null)).toBe(true);
+  });
+
+  it('ResendEmailSender', async () => {
+    const sender = new ResendEmailSender(
+      'k',
+      'f',
+      workersLikeFetch(() => new Response('{}', { status: 200 })),
+    );
+    await expect(
+      sender.send({ to: ['a@b.co'], subject: 's', text: 't', html: 'h' }),
+    ).resolves.toBeUndefined();
+  });
+});
 
 describe('TurnstileVerifier', () => {
   it('posts the token and honours the success flag', async () => {
@@ -33,6 +68,28 @@ describe('TurnstileVerifier', () => {
       throw new Error('net');
     }) as unknown as typeof fetch);
     expect(await boom.verify('t', null)).toBe(false);
+  });
+
+  it('logs why a check failed, without the token or secret', async () => {
+    const logger = createMemoryLogger();
+    const reply = (body: object) => (async () => Response.json(body)) as unknown as typeof fetch;
+    await new TurnstileVerifier('SECRET-123', reply({}), logger).verify(null, null, 'contact');
+    await new TurnstileVerifier(
+      'SECRET-123',
+      reply({ success: false, 'error-codes': ['invalid-input-secret'] }),
+      logger,
+    ).verify('TOKEN-456', null, 'contact');
+    await new TurnstileVerifier('SECRET-123', reply({ success: true, action: 'bulk_quote' }), logger).verify(
+      'TOKEN-456',
+      null,
+      'contact',
+    );
+    expect(logger.entries.map((e) => e.fields)).toEqual([
+      { reason: 'missing-token', action: 'contact' },
+      { reason: 'rejected', action: 'contact', errorCodes: ['invalid-input-secret'] },
+      { reason: 'action-mismatch', action: 'contact', receivedAction: 'bulk_quote' },
+    ]);
+    expect(JSON.stringify(logger.entries)).not.toMatch(/TOKEN-456|SECRET-123/);
   });
 });
 

@@ -32,6 +32,19 @@ test('FAQ explains how charcoal works and how to recharge', async ({ page }) => 
   await expect(page.getByText(/direct sunlight for 1–2 hours/i)).toBeVisible();
 });
 
+test('contact form submits through Turnstile verification on the Workers runtime', async ({ page }) => {
+  // Exercises the real server-side Turnstile check (Cloudflare's always-pass test keys), which unit tests
+  // with mocked fetch cannot: the Workers runtime rejects fetch called with the wrong `this`.
+  await page.goto('/contact');
+  await page.getByLabel('Name').fill('E2E Tester');
+  await page.getByLabel('Email').fill('e2e@example.com');
+  await page.getByLabel('Topic').selectOption({ index: 1 });
+  await page.getByLabel('Message').fill('Checking that the contact form reaches the inbox.');
+  await expect(page.locator('input[name="cf-turnstile-response"]')).toHaveValue(/.+/, { timeout: 15_000 });
+  await page.getByRole('button', { name: 'Send message' }).click();
+  await expect(page.getByText('Message received')).toBeVisible();
+});
+
 test('contact and bulk forms render with bot protection fields', async ({ page }) => {
   await page.goto('/contact');
   await expect(page.getByLabel('Email')).toBeVisible();

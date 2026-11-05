@@ -18,7 +18,16 @@ Newest first. One entry per working session: what changed, what was verified, wh
   now reads it from `wrangler.jsonc` (`scripts/site-url.mjs`; an env var still overrides), and robots.txt
   omits the sitemap line when no URL is known. Tests in `tests/unit/site-url.test.ts`.
 
-**Next:** founder places the Phase 5 test order, then Phase 6 (Access for `/admin`).
+- Phase 5 test order `BB-9WCPSA` ($13, Stripe sandbox) was marked paid by the webhook. ✅
+- Fixed (production bug): `TurnstileVerifier` and `ResendEmailSender` called a stored `fetch` as
+  `this.fetchImpl(...)`, which the Workers runtime rejects ("Illegal invocation"). Every contact/bulk form
+  failed with "could not verify you are human" and no alert email could ever send. Unit tests missed it
+  because mocked `fetch` ignores `this`. Fix: wrap the injected fetch in a closure. Regression tests use a
+  Workers-like fetch that throws on a wrong `this`; a new E2E test submits the contact form through the real
+  Turnstile check (test keys) on workerd. Failed checks now log a reason (`captcha.failed`, no token/secret)
+  — that log is how this was diagnosed. Verified live: contact message stored after the deploy.
+
+**Next:** confirm alert emails arrive, then Phase 6 (Access for `/admin`).
 
 ## 2026-11-04 — Milestone 1 build
 

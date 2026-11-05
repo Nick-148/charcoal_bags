@@ -32,10 +32,10 @@ export function createEmailSender(config: AppConfig, logger: Logger): EmailSende
     : new RedactedLogEmailSender(logger);
 }
 
-export function createCaptchaVerifier(config: AppConfig): CaptchaVerifier | null {
+export function createCaptchaVerifier(config: AppConfig, logger: Logger): CaptchaVerifier | null {
   switch (config.captcha.provider) {
     case 'turnstile':
-      return new TurnstileVerifier(config.captcha.secretKey);
+      return new TurnstileVerifier(config.captcha.secretKey, fetch, logger);
     case 'disabled':
       return new DisabledCaptchaVerifier();
     case 'unconfigured':

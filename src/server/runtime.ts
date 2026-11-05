@@ -67,7 +67,7 @@ export function orderDeps(request: Request, logger = requestLogger(request)): Or
 /** Null when captcha is unconfigured — the form must be shown as unavailable. */
 export function inquiryDeps(request: Request, logger = requestLogger(request)): InquiryDeps | null {
   const config = getConfig();
-  const captcha = createCaptchaVerifier(config);
+  const captcha = createCaptchaVerifier(config, logger);
   if (!captcha) return null;
   return {
     db: getDb(),
