@@ -53,7 +53,9 @@ Cloudflare Access ──► /admin (JWT re-verified in the Worker)
 
 ## Deploying
 
-See [docs/runbooks/deploy.md](docs/runbooks/deploy.md). Summary: create the D1 database, set secrets,
+First time? Start with [docs/runbooks/first-time-setup.md](docs/runbooks/first-time-setup.md), a
+click-by-click guide from zero accounts to live payments. Short reference:
+[docs/runbooks/deploy.md](docs/runbooks/deploy.md). Summary: create the D1 database, set secrets,
 connect the GitHub repo to Workers Builds, add the Stripe webhook, and protect `/admin` with Cloudflare
 Access.
 

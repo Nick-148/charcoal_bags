@@ -7,8 +7,11 @@ Newest first. One entry per working session: what changed, what was verified, wh
 - Pushed `main` to https://github.com/Nick-148/charcoal_bags; first CI run green (verify + 14 E2E).
 - Founder created the production D1 database; its `database_id` is now in `wrangler.jsonc` (binding
   stays `DB`). `npm run verify` green.
+- Added `docs/runbooks/first-time-setup.md`: click-by-click setup for Cloudflare, Turnstile, Resend,
+  Stripe (sandbox → live), Access, and an optional custom domain, with a check after each phase and
+  troubleshooting keyed to the site's real error messages.
 
-**Next:** `npm run db:migrate:remote`, then continue `docs/runbooks/deploy.md` from step 2.
+**Next:** founder works through `docs/runbooks/first-time-setup.md`, starting at Phase 1.
 
 ## 2026-11-04 — Milestone 1 build
 

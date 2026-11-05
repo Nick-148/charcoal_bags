@@ -2,6 +2,10 @@
 
 First deploy takes about an hour. Do it in **Stripe test mode** first, then switch to live keys.
 
+> **First time, or no accounts yet?** Follow [first-time-setup.md](first-time-setup.md) instead: the
+> same steps, click by click, in order, with a check at the end of each phase. This page is the short
+> reference.
+
 ## 0. Prerequisites
 
 - Cloudflare account (free plan is fine), Stripe account, Resend account.
