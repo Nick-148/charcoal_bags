@@ -11,7 +11,14 @@ Newest first. One entry per working session: what changed, what was verified, wh
   Stripe (sandbox → live), Access, and an optional custom domain, with a check after each phase and
   troubleshooting keyed to the site's real error messages.
 
-**Next:** founder works through `docs/runbooks/first-time-setup.md`, starting at Phase 1.
+- Founder finished setup Phases 1–4: site live at https://charcoal-bags.nicknickp148.workers.dev, remote
+  migrations applied, Turnstile/Resend/Stripe (sandbox) secrets set, public settings in `wrangler.jsonc`.
+- Fixed: local builds ignored `PUBLIC_SITE_URL` (it was only read from the shell environment), so the live
+  site had no canonical tags or sitemap and robots.txt pointed at a relative, nonexistent sitemap. The build
+  now reads it from `wrangler.jsonc` (`scripts/site-url.mjs`; an env var still overrides), and robots.txt
+  omits the sitemap line when no URL is known. Tests in `tests/unit/site-url.test.ts`.
+
+**Next:** founder places the Phase 5 test order, then Phase 6 (Access for `/admin`).
 
 ## 2026-11-04 — Milestone 1 build
 

@@ -32,8 +32,9 @@ Re-run the migrate command whenever `migrations/` gets a new file. It is safe to
 npm run deploy
 ```
 
-Note the URL, e.g. `https://charcoal-bags.<your-subdomain>.workers.dev`. Put it in `wrangler.jsonc → vars.PUBLIC_SITE_URL`
-and commit.
+Note the URL, e.g. `https://charcoal-bags.<your-subdomain>.workers.dev`. Put it in `wrangler.jsonc → vars.PUBLIC_SITE_URL`,
+commit, and deploy again. The Worker uses it for redirects, and the build reads it from the same place for
+canonical tags, the sitemap, and robots.txt.
 
 ## 3. Secrets
 
@@ -82,8 +83,8 @@ Workers & Pages → `charcoal-bags` → Settings → Builds → **Connect** the 
 
 - Build command: `npm ci && npm run build`
 - Deploy command: `npx wrangler deploy`
-- **Build variable:** `PUBLIC_SITE_URL=https://charcoal-bags.<subdomain>.workers.dev` (canonical URLs,
-  sitemap and robots.txt are generated at build time from it).
+- No build variables needed: the build reads `PUBLIC_SITE_URL` from the committed `wrangler.jsonc`. (A
+  `PUBLIC_SITE_URL` build variable, if set, overrides it.)
 - Production branch: `main`. Non-production branches get preview URLs. Protect those with Access too
   (Worker settings → Domains & Routes → Preview URLs → Enable Cloudflare Access).
 

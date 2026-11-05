@@ -478,7 +478,8 @@ push to `main` deploy automatically:
 1. **Workers & Pages** → `charcoal-bags` → **Settings** → **Builds** → **Connect** → GitHub →
    authorize → pick `Nick-148/charcoal_bags`.
 2. **Build command:** `npm ci && npm run build` · **Deploy command:** `npx wrangler deploy`
-3. **Build variables:** `PUBLIC_SITE_URL` = your site URL.
+3. **Build variables:** none needed. The build reads your site URL from `wrangler.jsonc`, so make sure
+   that file is committed and pushed first.
 4. **Production branch:** `main`.
 
 GitHub Actions already runs all tests on every push. Only merge to `main` when it's green.

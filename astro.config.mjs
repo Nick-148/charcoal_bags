@@ -4,9 +4,12 @@ import react from '@astrojs/react';
 import sitemap from '@astrojs/sitemap';
 import tailwindcss from '@tailwindcss/vite';
 import { defineConfig } from 'astro/config';
+import { readSiteUrl } from './scripts/site-url.mjs';
+import { products } from './src/config/catalog';
 
-// Canonical URL for sitemap/OG/robots, set at build time. Unset = no canonical tags (never guess a host).
-const site = process.env.PUBLIC_SITE_URL || undefined;
+// Canonical URL for sitemap/robots/canonical tags, baked in at build time from the same PUBLIC_SITE_URL
+// the Worker runs with. Unset = no canonical tags (never guess a host).
+const site = readSiteUrl();
 
 export default defineConfig({
   ...(site ? { site } : {}),
@@ -26,6 +29,8 @@ export default defineConfig({
     react(),
     sitemap({
       filter: (page) => !/\/(admin|checkout|cart|api)(\/|$)/.test(new URL(page).pathname),
+      // Product pages are rendered on demand (live stock), so the sitemap can't discover them itself.
+      customPages: site ? products.map((p) => new URL(`/shop/${p.slug}/`, site).toString()) : [],
     }),
   ],
   security: {
